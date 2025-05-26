@@ -1,0 +1,244 @@
+Project Goal:
+Develop a fully functional and responsive wholesale e-commerce website for the Indian market named "Fourkids." The platform will facilitate product sales from the admin to registered wholesale buyers.
+
+I. Core User Roles & Authentication:
+
+User (Wholesale Buyer):
+
+Registration: Name, Business Name, GSTIN (optional but good for wholesale), Email, Password, Phone Number, Address.
+
+Login: Email and Password.
+
+Password Reset functionality.
+
+View products, categories, and promotional banners.
+
+Add products to Watchlist.
+
+Add products to Basket (Cart).
+
+Proceed to a simplified checkout (details TBD, but assume basic for now).
+
+View order history.
+
+Manage profile.
+
+Admin:
+
+Separate Login: Secure admin credentials (username/password).
+
+Dashboard: Overview of sales, users, products.
+
+Product Management:
+
+Upload new products: Name, Description, Multiple Images, SKU, Categories, Wholesale Price, Stock Quantity, Variants (e.g., size, color).
+
+Edit existing products.
+
+Delete products.
+
+Manage product categories (create, edit, delete categories like Capri, Cargo, Momfit, Pants, etc.).
+
+Order Management: View and update order statuses.
+
+User Management: View registered users.
+
+Content Management: Ability to update homepage banners and other static content.
+
+II. Website Structure & Design:
+
+A. Global Elements:
+
+Responsiveness: The entire website must be fully responsive and adapt seamlessly to desktop, tablet, and mobile devices.
+
+Brand:
+
+Shop Name: Fourkids
+
+Logo: To be provided (placeholder for now).
+
+B. Header Section (Two-Tier):
+
+First Header (Top Bar):
+
+Left Side:
+
+"Support" (links to a contact/FAQ page)
+
+"Wholesale Program" (links to a page explaining benefits/terms)
+
+"About Us" (links to an about page)
+
+Middle:
+
+"Fourkids" Logo.
+
+Right Side:
+
+Search Icon/Bar (functional product search).
+
+"Login" Button (changes to "My Account" or User Icon upon login).
+
+Watchlist Icon (with a counter for items).
+
+Basket/Cart Icon (with a counter for items).
+
+Hover Effect: All clickable text links in this header should have an underline hover effect.
+
+Second Header (Navigation Bar):
+
+Middle (Centered):
+
+Dynamic list of main product categories (e.g., "Capri," "Cargo," "Momfit," "Pants," "T-Shirts," "Shirts," etc.). These should be manageable by the admin.
+
+Hover Effect: All category links in this header should have an underline hover effect.
+
+C. Homepage Layout:
+
+Row 1: Promotional Banners (Full width, 2 distinct sections/columns within the row):
+
+Banner 1: Text "FREE SHIPPING ACROSS INDIA"
+
+Banner 2: Text "UNBEATABLE INTERNATIONAL PRICE"
+
+(Consider distinct background colors or subtle visual separation)
+
+Row 2: Value Proposition Banners (Full width, 3 columns):
+
+Column 1: Text "MADE IN INDIA" (perhaps with a relevant icon)
+
+Column 2: Text "ASSURED QUALITY" (perhaps with a relevant icon)
+
+Column 3: Text "TRENDY DESIGNS" (perhaps with a relevant icon)
+
+Row 3: Main Hero Banner Carousel (Full width):
+
+Large, high-quality images (admin should be able to upload/change these).
+
+Each slide can have overlaid text.
+
+Prominently feature a "SHOP NOW" button on each slide, typically on the left side of the image or overlaid strategically. This button should link to a relevant category or product page.
+
+Row 4: "Categories to Bag" Section:
+
+Display main product categories as visually appealing cards.
+
+Each card should have the category name (e.g., "Capri," "Cargo") and ideally a representative image.
+
+Clicking a card navigates the user to that specific category page.
+
+Row 5: "Sample Products" / "Featured Products" Section:
+
+Display a grid of selected products (e.g., 4-8 products).
+
+Each product should be presented as a Product Card (details below).
+
+Row 6: "Why Choose Fourkids?" Section:
+
+Text and potentially an image explaining the benefits of partnering with Fourkids.
+
+Row 7: "Become a Partner of Fourkids" Section:
+
+Call to action, possibly linking to the registration page or a "Wholesale Program" information page.
+
+D. Product Card Design:
+
+Display: Product Image, Product Name, Wholesale Price.
+
+Hover Effect: On mouse hover over the product card:
+
+Subtly change the card's appearance (e.g., slight shadow, border).
+
+Reveal three clickable options/icons:
+
+"Add to Watchlist" (e.g., a heart icon).
+
+"Add to Basket" (e.g., a cart icon or "Add to Cart" button).
+
+"Quick View" (e.g., an eye icon or "Quick View" button).
+
+Quick View should open a modal/popup displaying key product details (images, description, price, add to cart option) without leaving the current page.
+
+E. Category Pages:
+
+Display category name as a heading.
+
+Option for category-specific banner/description (admin-managed).
+
+Grid of products belonging to that category, using the Product Card design.
+
+Filtering options (e.g., by size, color, price range - if applicable).
+
+Sorting options (e.g., by price, newness).
+
+F. Product Detail Pages:
+
+Product Title
+
+Multiple Product Images (with zoom/carousel functionality)
+
+Detailed Description
+
+Wholesale Price
+
+SKU
+
+Available variants (e.g., size selection dropdowns, color swatches)
+
+Stock availability (e.g., "In Stock," "Low Stock")
+
+Quantity selector
+
+"Add to Basket" button
+
+"Add to Watchlist" button
+
+Social sharing buttons (optional)
+
+Related products section (optional)
+
+G. Footer:
+
+Links: About Us, Contact Us, Shipping Policy, Returns Policy, Terms & Conditions, Privacy Policy.
+
+Social Media Icons.
+
+Copyright information.
+
+III. Key Functionalities:
+
+Working Buttons: All buttons (Login, Add to Cart, Add to Watchlist, Quick View, Shop Now, etc.) must be fully functional.
+
+User Authentication: Secure login and registration for users and admin.
+
+Admin Product Management: Full CRUD (Create, Read, Update, Delete) capabilities for products and categories.
+
+Shopping Cart: Persistent cart, ability to update quantities, remove items.
+
+Watchlist: Persistent watchlist for logged-in users.
+
+Search: Product search functionality based on keywords, product names, SKUs.
+
+IV. Technology Stack Suggestion (Optional - you can ask the AI to suggest this or specify if you have a preference):
+
+Frontend: React.js, Vue.js, or Angular (for a dynamic and responsive UI). HTML, CSS, JavaScript.
+
+Backend: Node.js with Express.js, Python with Django/Flask, or PHP with Laravel.
+
+Database: MongoDB, PostgreSQL, or MySQL.
+
+Consider a Headless CMS for content management if feasible.
+
+V. Deliverables Expected from AI (when you use this prompt):
+
+A clear project structure (folder and file organization).
+
+Code for the described features, broken down into components/modules.
+
+Styling (CSS/SCSS) to match the design requirements.
+
+Instructions on how to set up and run the project.
+
+API endpoint definitions for backend-frontend communication.
+
+Please use this detailed specification to generate the code for the "Fourkids" wholesale website. Ensure all mentioned features and design elements are considered.
