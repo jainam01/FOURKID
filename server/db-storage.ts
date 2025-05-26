@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, SQL, sql } from 'drizzle-orm';
 import {
   users, User, InsertUser,
   categories, Category, InsertCategory,
@@ -10,7 +10,8 @@ import {
   cartItems, CartItem, InsertCartItem,
   watchlistItems, WatchlistItem, InsertWatchlistItem,
   banners, Banner, InsertBanner,
-  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems
+  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
+  ProductVariant
 } from '@shared/schema';
 import { IStorage } from './storage';
 
@@ -22,6 +23,21 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Test the connection
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
+
+pool.connect((err, client, done) => {
+  if (err) {
+    console.error('Error connecting to the database:', err);
+    process.exit(-1);
+  }
+  console.log('Successfully connected to the database');
+  done();
+});
+
 const db = drizzle(pool);
 
 export class DbStorage implements IStorage {
@@ -29,6 +45,10 @@ export class DbStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -88,12 +108,12 @@ export class DbStorage implements IStorage {
   }
 
   async getProductsWithDetails(): Promise<ProductWithDetails[]> {
-    const products = await db.select().from(products);
-    const categories = await db.select().from(categories);
+    const productList = await db.select().from(products);
+    const categoryList = await db.select().from(categories);
     
-    return products.map(product => ({
+    return productList.map(product => ({
       ...product,
-      category: categories.find(cat => cat.id === product.categoryId)!
+      category: categoryList.find(cat => cat.id === product.categoryId)!
     }));
   }
 
@@ -105,8 +125,8 @@ export class DbStorage implements IStorage {
     const category = await this.getCategoryBySlug(slug);
     if (!category) return [];
     
-    const products = await db.select().from(products).where(eq(products.categoryId, category.id));
-    return products.map(product => ({
+    const productList = await db.select().from(products).where(eq(products.categoryId, category.id));
+    return productList.map(product => ({
       ...product,
       category
     }));
@@ -131,13 +151,21 @@ export class DbStorage implements IStorage {
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
-    const result = await db.insert(products).values(productData).returning();
+    const { variants, ...rest } = productData;
+    const result = await db.insert(products).values({
+      ...rest,
+      variants: variants ? sql`${JSON.stringify(variants)}::jsonb` : null
+    }).returning();
     return result[0];
   }
 
   async updateProduct(id: number, productData: Partial<InsertProduct>): Promise<Product | undefined> {
+    const { variants, ...rest } = productData;
     const result = await db.update(products)
-      .set(productData)
+      .set({
+        ...rest,
+        variants: variants ? sql`${JSON.stringify(variants)}::jsonb` : undefined
+      })
       .where(eq(products.id, id))
       .returning();
     return result[0];
@@ -150,12 +178,12 @@ export class DbStorage implements IStorage {
 
   // Cart operations
   async getUserCartItems(userId: number): Promise<CartItemWithProduct[]> {
-    const cartItems = await db.select().from(cartItems).where(eq(cartItems.userId, userId));
-    const products = await db.select().from(products);
+    const cartItemList = await db.select().from(cartItems).where(eq(cartItems.userId, userId));
+    const productList = await db.select().from(products);
     
-    return cartItems.map(item => ({
+    return cartItemList.map(item => ({
       ...item,
-      product: products.find(p => p.id === item.productId)!
+      product: productList.find(p => p.id === item.productId)!
     }));
   }
 
@@ -165,7 +193,11 @@ export class DbStorage implements IStorage {
   }
 
   async addToCart(itemData: InsertCartItem): Promise<CartItem> {
-    const result = await db.insert(cartItems).values(itemData).returning();
+    const { variantInfo, ...rest } = itemData;
+    const result = await db.insert(cartItems).values({
+      ...rest,
+      variantInfo: variantInfo ? sql`${JSON.stringify(variantInfo)}::jsonb` : null
+    }).returning();
     return result[0];
   }
 
@@ -189,12 +221,12 @@ export class DbStorage implements IStorage {
 
   // Watchlist operations
   async getUserWatchlistItems(userId: number): Promise<WatchlistItemWithProduct[]> {
-    const watchlistItems = await db.select().from(watchlistItems).where(eq(watchlistItems.userId, userId));
-    const products = await db.select().from(products);
+    const watchlistItemList = await db.select().from(watchlistItems).where(eq(watchlistItems.userId, userId));
+    const productList = await db.select().from(products);
     
-    return watchlistItems.map(item => ({
+    return watchlistItemList.map(item => ({
       ...item,
-      product: products.find(p => p.id === item.productId)!
+      product: productList.find(p => p.id === item.productId)!
     }));
   }
 
@@ -256,17 +288,17 @@ export class DbStorage implements IStorage {
   }
 
   async getOrdersWithItems(): Promise<OrderWithItems[]> {
-    const orders = await db.select().from(orders);
-    const orderItems = await db.select().from(orderItems);
-    const products = await db.select().from(products);
+    const orderList = await db.select().from(orders);
+    const orderItemList = await db.select().from(orderItems);
+    const productList = await db.select().from(products);
     
-    return orders.map(order => ({
+    return orderList.map(order => ({
       ...order,
-      items: orderItems
+      items: orderItemList
         .filter(item => item.orderId === order.id)
         .map(item => ({
           ...item,
-          product: products.find(p => p.id === item.productId)!
+          product: productList.find(p => p.id === item.productId)!
         }))
     }));
   }
@@ -276,17 +308,17 @@ export class DbStorage implements IStorage {
   }
 
   async getUserOrdersWithItems(userId: number): Promise<OrderWithItems[]> {
-    const orders = await this.getUserOrders(userId);
-    const orderItems = await db.select().from(orderItems);
-    const products = await db.select().from(products);
+    const orderList = await this.getUserOrders(userId);
+    const orderItemList = await db.select().from(orderItems);
+    const productList = await db.select().from(products);
     
-    return orders.map(order => ({
+    return orderList.map(order => ({
       ...order,
-      items: orderItems
+      items: orderItemList
         .filter(item => item.orderId === order.id)
         .map(item => ({
           ...item,
-          product: products.find(p => p.id === item.productId)!
+          product: productList.find(p => p.id === item.productId)!
         }))
     }));
   }
@@ -300,14 +332,14 @@ export class DbStorage implements IStorage {
     const order = await this.getOrder(id);
     if (!order) return undefined;
     
-    const orderItems = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
-    const products = await db.select().from(products);
+    const orderItemList = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
+    const productList = await db.select().from(products);
     
     return {
       ...order,
-      items: orderItems.map(item => ({
+      items: orderItemList.map(item => ({
         ...item,
-        product: products.find(p => p.id === item.productId)!
+        product: productList.find(p => p.id === item.productId)!
       }))
     };
   }

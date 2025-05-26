@@ -15,15 +15,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session
   app.use(
     session({
-      secret: "fourkids-secret-key",
+      secret: process.env.SESSION_SECRET || "fourkids-secret-key",
       resave: false,
       saveUninitialized: false,
       cookie: { 
-        secure: false, // Allow cookies in development
-        maxAge: 24 * 60 * 60 * 1000 
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
       },
       store: new MemoryStore({
-        checkPeriod: 86400000 // prune expired entries every 24h
+        checkPeriod: 86400000, // prune expired entries every 24h
+        max: 1000 // maximum number of sessions
       })
     })
   );
@@ -38,15 +40,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { usernameField: "email" },
       async (email, password, done) => {
         try {
+          console.log('Attempting login for email:', email);
           const user = await storage.getUserByEmail(email);
           if (!user) {
+            console.log('User not found:', email);
             return done(null, false, { message: "Incorrect email." });
           }
           if (user.password !== password) {
+            console.log('Invalid password for user:', email);
             return done(null, false, { message: "Incorrect password." });
           }
+          console.log('Login successful for user:', email);
           return done(null, user);
         } catch (err) {
+          console.error('Login error:', err);
           return done(err);
         }
       }
@@ -107,14 +114,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       passport.authenticate("local", (err: Error, user: any, info: { message: string }) => {
         if (err) {
-          return next(err);
+          console.error('Login error:', err);
+          return res.status(500).json({ message: "Authentication failed", error: err.message });
         }
         if (!user) {
-          return res.status(401).json({ message: info.message });
+          return res.status(401).json({ message: info.message || "Invalid credentials" });
         }
         req.logIn(user, (err) => {
           if (err) {
-            return next(err);
+            console.error('Session error:', err);
+            return res.status(500).json({ message: "Session creation failed", error: err.message });
           }
           // Remove password from response
           const { password, ...userWithoutPassword } = user;
@@ -122,6 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       })(req, res, next);
     } catch (error) {
+      console.error('Login validation error:', error);
       res.status(400).json({ message: "Invalid login data", error: (error as Error).message });
     }
   });
