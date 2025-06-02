@@ -53,8 +53,8 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
 
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-    { href: "/admin/products", label: "Products", icon: <Package className="h-5 w-5" /> },
     { href: "/admin/categories", label: "Categories", icon: <Tag className="h-5 w-5" /> },
+    { href: "/admin/products", label: "Products", icon: <Package className="h-5 w-5" /> },
     { href: "/admin/orders", label: "Orders", icon: <ShoppingCart className="h-5 w-5" /> },
     { href: "/admin/users", label: "Users", icon: <Users className="h-5 w-5" /> },
     { href: "/admin/banners", label: "Banners", icon: <Images className="h-5 w-5" /> },
