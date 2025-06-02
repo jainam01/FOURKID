@@ -4,7 +4,6 @@ import { useParams, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +21,7 @@ import { useCategory, useCreateCategory, useUpdateCategory } from "@/lib/api";
 import { insertCategorySchema } from "@shared/schema";
 import { ArrowLeft, Save } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Fragment } from "react";
 
 // Extend the category schema with validation for slug
 const categoryFormSchema = insertCategorySchema.extend({
@@ -122,19 +122,17 @@ const CategoryForm = () => {
 
   if (isEditing && isLoadingCategory) {
     return (
-      <AdminLayout>
-        <div className="py-8 text-center">Loading category data...</div>
-      </AdminLayout>
+      <div className="py-8 text-center">Loading category data...</div>
     );
   }
 
   return (
-    <AdminLayout>
+    <Fragment>
       <Helmet>
         <title>{isEditing ? "Edit Category" : "Add New Category"} - Fourkids Wholesale</title>
-        <meta 
-          name="description" 
-          content={isEditing ? "Edit existing category details" : "Add a new product category"} 
+        <meta
+          name="description"
+          content={isEditing ? "Edit existing category details" : "Add a new product category"}
         />
       </Helmet>
 
@@ -194,8 +192,8 @@ const CategoryForm = () => {
                     <FormItem>
                       <FormLabel>Description (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter category description" 
+                        <Textarea
+                          placeholder="Enter category description"
                           className="resize-none min-h-24"
                           {...field}
                           value={field.value || ""}
@@ -220,7 +218,7 @@ const CategoryForm = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
+    </Fragment>
   );
 };
 

@@ -15,12 +15,14 @@ import {
 } from '@shared/schema';
 import { IStorage } from './storage';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
+// if (!process.env.DATABASE_URL) {
+//   throw new Error('DATABASE_URL environment variable is required');
+// }
+
+
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: "postgres://postgres:jainam1921@localhost:5000/wholesale_wizard",
 });
 
 // Test the connection

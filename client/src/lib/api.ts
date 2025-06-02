@@ -25,6 +25,13 @@ export function useCategoryBySlug(slug: string) {
   return useQuery<Category>({
     queryKey: ['/api/categories/slug', slug],
     enabled: !!slug,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/categories/slug/${slug}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch category by slug');
+      }
+      return res.json();
+    },
   });
 }
 
@@ -90,6 +97,13 @@ export function useProductsByCategorySlug(slug: string) {
   return useQuery<ProductWithDetails[]>({
     queryKey: ['/api/products/category-slug', slug],
     enabled: !!slug,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/products/category-slug/${slug}`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch products for category slug: ${slug}`);
+      }
+      return res.json();
+    },
   });
 }
 

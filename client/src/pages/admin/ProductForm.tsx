@@ -47,7 +47,7 @@ const ProductForm = () => {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { data: categories = [] } = useCategories();
-  const { data: product, isLoading: isLoadingProduct } = useProduct(productId);
+  const { data: product, isLoading: isLoadingProduct } = useProduct(productId, { enabled: isEditing && productId > 0 });
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 

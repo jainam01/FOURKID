@@ -70,11 +70,6 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
 
   return (
     <div className="h-full bg-white border-r flex flex-col">
-      {/* Sidebar Header */}
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold text-primary">Fourkids Admin</h1>
-      </div>
-
       {/* User Profile */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-3">

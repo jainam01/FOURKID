@@ -12,6 +12,25 @@ const MemoryStore = createMemoryStore(session);
 const storage = new DbStorage();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create admin user if it doesn't exist
+  try {
+    const adminUser = await storage.getUserByEmail('admin@fourkids.com');
+    if (!adminUser) {
+      await storage.createUser({
+        email: 'admin@fourkids.com',
+        password: 'admin123',
+        name: 'Admin User',
+        businessName: 'FourKids Admin',
+        phoneNumber: '1234567890',
+        address: 'Admin Address',
+        role: 'admin'
+      });
+      console.log('Admin user created successfully');
+    }
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+  }
+
   // Setup session
   app.use(
     session({
@@ -73,6 +92,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hello World route
+  app.get("/api/hello", (req, res) => {
+    console.log("Hello World from WholesaleWizard!");
+    res.json({ message: "Hello World from WholesaleWizard!" });
+  });
+
   // Authentication middleware
   const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
@@ -110,6 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", (req, res, next) => {
     try {
+      console.log("Login request received:", req.body);
       const credentials = loginSchema.parse(req.body);
       
       passport.authenticate("local", (err: Error, user: any, info: { message: string }) => {
@@ -185,6 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(category);
     } catch (error) {
+      console.error("Error fetching category by slug:", error);
       res.status(500).json({ message: "Failed to fetch category", error: (error as Error).message });
     }
   });
