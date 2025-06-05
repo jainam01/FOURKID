@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
 import { createServer, type Server } from "http";
@@ -7,11 +8,82 @@ import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import createMemoryStore from "memorystore";
+import { z } from "zod";
+import nodemailer from "nodemailer";
+import cors from 'cors';
 
 const MemoryStore = createMemoryStore(session);
 const storage = new DbStorage();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add these middleware at the very top
+  app.use(cors({
+    origin: 'http://localhost:3000', // Your frontend URL
+    credentials: true
+  }));
+  app.use(express.json());
+
+  // Create transporter with proper error handling
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  // Verify transporter connection
+  transporter.verify(function(error, success) {
+    if (error) {
+      console.log('SMTP connection error:', error);
+    } else {
+      console.log('SMTP server is ready to send messages');
+    }
+  });
+
+  app.post("/api/support", async (req, res) => {
+    try {
+      console.log('Request received:', req.body); // Debug log
+      const { name, email, subject, message } = req.body;
+
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.error('SMTP credentials not configured');
+        return res.status(500).json({ message: "Email service not configured" });
+      }
+
+      const mailOptions = {
+        from: `"${name}"`,
+        to: process.env.SMTP_USER,
+        replyTo: email,
+        subject: `Support Request: ${subject}`,
+        html: `
+          <h2>New Support Request</h2>
+          <p><strong>From:</strong> ${name} (${email})</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully');
+      res.json({ message: "Support request submitted successfully" });
+    } catch (error) {
+      console.error('Detailed error:', error);
+      res.status(500).json({ 
+        message: "Failed to submit support request", 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Create admin user if it doesn't exist
   try {
     const adminUser = await storage.getUserByEmail('admin@fourkids.com');
@@ -428,10 +500,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).id;
       const watchlistItemData = insertWatchlistItemSchema.parse({ ...req.body, userId });
+
+      const isInWatchlist = await storage.isInWatchlist(userId, watchlistItemData.productId);
+      if (isInWatchlist) {
+        return res.status(409).json({ message: "Product already in watchlist" });
+      }
+
       const watchlistItem = await storage.addToWatchlist(watchlistItemData);
       res.status(201).json(watchlistItem);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid watchlist item data", error: (error as Error).message });
+    } catch (error: unknown) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid watchlist item data", errors: error.flatten() });
+      }
+      console.error("Error adding to watchlist:", error);
+      res.status(500).json({ message: "Failed to add to watchlist", error: (error as Error).message });
     }
   });
 
@@ -610,6 +692,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users", error: (error as Error).message });
+    }
+  });
+
+  app.post("/api/wholesale-application", async (req, res) => {
+    console.log('Received wholesale application request');
+    console.log('Request body:', req.body);
+    
+    try {
+      const { fullName, businessEmail, companyName, gstNumber, productTypes, catalogFile } = req.body;
+
+      // Validate required fields
+      if (!fullName || !businessEmail || !companyName || !gstNumber || !productTypes) {
+        console.log('Missing required fields:', { fullName, businessEmail, companyName, gstNumber, productTypes });
+        return res.status(400).json({ 
+          message: "Missing required fields",
+          details: { fullName, businessEmail, companyName, gstNumber, productTypes }
+        });
+      }
+
+      // Validate SMTP configuration
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.error('SMTP configuration missing:', {
+          SMTP_USER: !!process.env.SMTP_USER,
+          SMTP_PASSWORD: !!process.env.SMTP_PASSWORD
+        });
+        return res.status(500).json({ message: "Email service not properly configured" });
+      }
+
+      const mailOptions = {
+        from: `"${fullName}" <${businessEmail}>`,
+        to: process.env.SMTP_USER,
+        replyTo: businessEmail,
+        subject: "New Wholesale Application",
+        html: `
+          <h2>New Wholesale Application Received</h2>
+          <p><strong>Full Name:</strong> ${fullName}</p>
+          <p><strong>Business Email:</strong> ${businessEmail}</p>
+          <p><strong>Company Name:</strong> ${companyName}</p>
+          <p><strong>GST Number:</strong> ${gstNumber}</p>
+          <p><strong>Product Categories:</strong> ${productTypes}</p>
+          ${catalogFile ? `<p><strong>Catalog Link:</strong> ${catalogFile}</p>` : ''}
+        `
+      };
+
+      console.log('Attempting to send email with configuration:', {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject
+      });
+
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully');
+      res.status(200).json({ message: "Application submitted successfully" });
+    } catch (error) {
+      console.error("Error processing wholesale application:", error);
+      res.status(500).json({ 
+        message: "Failed to process application",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

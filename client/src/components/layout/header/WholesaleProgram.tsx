@@ -13,12 +13,74 @@ import {
   Phone,
   Sparkles // For Benefits
 } from "lucide-react";
+import { useState, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const WholesaleProgram = () => {
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    alert("Application submitted! (This is a placeholder)");
-    // Implement actual form submission logic
+    setIsSubmitting(true);
+    console.log('Form submission started');
+
+    // Get form data
+    const formData = new FormData(event.currentTarget);
+    const data = {
+      fullName: formData.get('fullName'),
+      businessEmail: formData.get('businessEmail'),
+      companyName: formData.get('companyName'),
+      gstNumber: formData.get('gstNumber'),
+      productTypes: formData.get('productTypes'),
+      catalogFile: formData.get('catalogFile')
+    };
+
+    console.log('Submitting data:', data);
+
+    try {
+      console.log('Sending request to:', 'http://localhost:3001/api/wholesale-application');
+      const response = await fetch('http://localhost:3001/api/wholesale-application', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Failed to submit application');
+      }
+
+      const responseData = await response.json();
+      console.log('Success response:', responseData);
+
+      toast({
+        title: "Application submitted successfully",
+        description: "We'll review your application and get back to you soon.",
+      });
+
+      // Reset form using the form reference
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit application. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const benefits = [
@@ -151,33 +213,38 @@ const WholesaleProgram = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="fullName" className="block text-sm font-medium mb-1">Full Name</label>
-                    <Input id="fullName" type="text" placeholder="Your Full Name" required />
+                    <Input id="fullName" name="fullName" type="text" placeholder="Your Full Name" required />
                   </div>
                   <div>
                     <label htmlFor="businessEmail" className="block text-sm font-medium mb-1">Business Email</label>
-                    <Input id="businessEmail" type="email" placeholder="you@company.com" required />
+                    <Input id="businessEmail" name="businessEmail" type="email" placeholder="you@company.com" required />
                   </div>
                   <div>
                     <label htmlFor="companyName" className="block text-sm font-medium mb-1">Company Name</label>
-                    <Input id="companyName" type="text" placeholder="Your Company Pvt. Ltd." required />
+                    <Input id="companyName" name="companyName" type="text" placeholder="Your Company Pvt. Ltd." required />
                   </div>
                   <div>
                     <label htmlFor="gstNumber" className="block text-sm font-medium mb-1">GST Number</label>
-                    <Input id="gstNumber" type="text" placeholder="Your GSTIN" required />
+                    <Input id="gstNumber" name="gstNumber" type="text" placeholder="Your GSTIN" required />
                   </div>
                   <div>
                     <label htmlFor="productTypes" className="block text-sm font-medium mb-1">Primary Product Categories You Deal In</label>
-                    <Textarea id="productTypes" placeholder="e.g., Frocks, T-shirts, Ethnic Wear, Newborn Sets" rows={3} required />
+                    <Textarea id="productTypes" name="productTypes" placeholder="e.g., Frocks, T-shirts, Ethnic Wear, Newborn Sets" rows={3} required />
                   </div>
                   <div>
                     <label htmlFor="catalogFile" className="block text-sm font-medium mb-1">Company Website or Product Catalog Link (Optional)</label>
-                    <Input id="catalogFile" type="url" placeholder="https://yourcompany.com/catalog" />
+                    <Input id="catalogFile" name="catalogFile" type="url" placeholder="https://yourcompany.com/catalog" />
                   </div>
-                  <Button type="submit" size="lg" className="w-full">
-                    Submit Application
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Application"}
                   </Button>
                 </form>
               </CardContent>

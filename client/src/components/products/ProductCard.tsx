@@ -32,11 +32,18 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       return;
     }
 
+    // If product has variants, open quick view modal instead
+    if (product.variants && product.variants.length > 0) {
+      onQuickView(product);
+      return;
+    }
+
+    // For products without variants, add directly to cart
     addToCart.mutate(
       { 
         productId: product.id, 
         quantity: 1,
-        variantInfo: product.variants && product.variants.length > 0 ? product.variants[0] : undefined
+        variantInfo: null  // Explicitly set to null for products without variants
       },
       {
         onSuccess: () => {
@@ -45,7 +52,8 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
             description: `${product.name} has been added to your cart.`
           });
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("Add to cart error:", error);
           toast({
             title: "Error",
             description: "Failed to add item to cart. Please try again.",

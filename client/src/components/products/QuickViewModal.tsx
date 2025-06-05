@@ -82,15 +82,17 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
     }
 
     // Convert selected variants to array format
-    const variantInfo = Object.entries(selectedVariants).map(
-      ([name, value]) => ({ name, value })
-    )[0];
+    const variantInfo = Object.entries(selectedVariants).length > 0
+      ? Object.entries(selectedVariants).map(([name, value]) => ({ name, value }))
+      : null;
+
+    console.log("Adding to cart with variantInfo:", variantInfo); // Debug log
 
     addToCart.mutate(
       {
         productId: product.id,
         quantity,
-        variantInfo: variantInfo || undefined
+        variantInfo
       },
       {
         onSuccess: () => {
@@ -100,7 +102,8 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
           });
           onClose();
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("Add to cart error:", error); // Debug log
           toast({
             title: "Error",
             description: "Failed to add item to cart. Please try again.",

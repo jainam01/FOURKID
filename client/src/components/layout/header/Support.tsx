@@ -23,21 +23,52 @@ const Support = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [subject, setSubject] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    // Here you would typically send the data to your API
-    toast({
-      title: "Support request submitted",
-      description: "We'll get back to you as soon as possible.",
-    });
+    try {
+      const response = await fetch('http://localhost:3001/api/support', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          email,
+          subject,
+          message
+        }),
+      });
 
-    // Reset form
-    setName('');
-    setEmail('');
-    setMessage('');
-    setSubject('');
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Support request submitted",
+          description: "We'll get back to you as soon as possible.",
+        });
+
+        // Reset form
+        setName('');
+        setEmail('');
+        setMessage('');
+        setSubject('');
+      } else {
+        throw new Error(data.message || 'Failed to submit support request');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit support request",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const faqItems = [
@@ -163,7 +194,13 @@ const Support = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full">Send Message</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Sending..." : "Send Message"}
+              </Button>
             </form>
           </div>
 

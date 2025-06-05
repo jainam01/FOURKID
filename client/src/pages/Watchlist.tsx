@@ -15,7 +15,7 @@ const Watchlist = () => {
   const addToCart = useAddToCart();
   const { toast } = useToast();
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const { data: productDetails } = useProduct(selectedProductId || 0);
+  const { data: productDetails } = useProduct(selectedProductId || 0, { enabled: !!selectedProductId });
 
   const handleRemoveFromWatchlist = (id: number, name: string) => {
     removeFromWatchlist.mutate(id, {
@@ -37,7 +37,11 @@ const Watchlist = () => {
 
   const handleAddToCart = (productId: number, name: string) => {
     addToCart.mutate(
-      { productId, quantity: 1 },
+      { 
+        productId, 
+        quantity: 1,
+        variantInfo: null  // Set to null if no variants
+      },
       {
         onSuccess: () => {
           toast({

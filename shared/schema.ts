@@ -88,7 +88,7 @@
     userId: integer("user_id").notNull(),
     productId: integer("product_id").notNull(),
     quantity: integer("quantity").notNull(),
-   variantInfo: jsonb("variant_info").$type<ProductVariant[] | null | undefined>()
+    variantInfo: jsonb("variant_info").$type<ProductVariant[] | null | undefined>()
   });
 
   export const insertCartItemSchema = createInsertSchema(cartItems).omit({

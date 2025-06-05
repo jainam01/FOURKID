@@ -61,7 +61,11 @@ export function useLogout() {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
       // Also invalidate other user-specific data
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      // Explicitly clear cart data in cache on logout
+      queryClient.setQueryData(['/api/cart'], []);
       queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+      // Explicitly clear watchlist data in cache on logout
+      queryClient.setQueryData(['/api/watchlist'], []);
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     }
   });

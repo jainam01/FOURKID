@@ -154,6 +154,7 @@ export function useCart() {
 export function useAddToCart() {
   return useMutation<CartItem, Error, Omit<InsertCartItem, 'userId'>>({
     mutationFn: async (cartItemData) => {
+      console.log("cartItemData", cartItemData);
       const res = await apiRequest("POST", "/api/cart", cartItemData);
       return await res.json();
     },
@@ -210,6 +211,10 @@ export function useAddToWatchlist() {
   return useMutation<WatchlistItem, Error, Omit<InsertWatchlistItem, 'userId'>>({
     mutationFn: async (watchlistItemData) => {
       const res = await apiRequest("POST", "/api/watchlist", watchlistItemData);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to add to watchlist');
+      }
       return await res.json();
     },
     onSuccess: () => {
