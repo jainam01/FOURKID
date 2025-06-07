@@ -122,17 +122,22 @@ const Header = () => {
         {!(isMobile && isSearchVisible) && (
           <div className="flex items-center space-x-1 sm:space-x-2">
             {/* Desktop Search Form */}
-            <form onSubmit={handleSearch} className="hidden md:flex items-center" id="desktopSearchForm">
+            <form onSubmit={handleSearch} className="hidden md:flex items-center relative" id="desktopSearchForm">
               <Input
                 type="search"
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-32 sm:w-40 lg:w-48 rounded-l-md border-gray-300 border-r-0 focus:border-primary focus:ring-0 focus:ring-offset-0"
+                className="h-9 w-32 sm:w-40 lg:w-48 pr-10 rounded-md border-gray-300 focus:border-primary focus:ring-0 focus:ring-offset-0"
               />
-              <Button type="submit" variant="outline" size="icon" className="h-9 w-9 rounded-r-md rounded-l-none border-gray-300 border-l-0 hover:bg-gray-100 focus:z-10">
-                <Search className="h-4 w-4 text-gray-600" />
-              </Button>
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-600 hover:bg-gray-100 rounded focus:outline-none"
+                style={{ background: "none", border: "none" }}
+                tabIndex={-1}
+              >
+                <Search className="h-4 w-4" />
+              </button>
             </form>
 
             {/* Mobile Search Icon (triggers overlay search) */}

@@ -687,6 +687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  
+
   // User routes for admin
   app.get("/api/users", isAdmin, async (req, res) => {
     try {
