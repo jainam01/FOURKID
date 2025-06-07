@@ -44,45 +44,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/support", async (req, res) => {
-    try {
-      console.log('Request received:', req.body); // Debug log
-      const { name, email, subject, message } = req.body;
-
-      if (!name || !email || !subject || !message) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
-
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-        console.error('SMTP credentials not configured');
-        return res.status(500).json({ message: "Email service not configured" });
-      }
-
-      const mailOptions = {
-        from: `"${name}"`,
-        to: process.env.SMTP_USER,
-        replyTo: email,
-        subject: `Support Request: ${subject}`,
-        html: `
-          <h2>New Support Request</h2>
-          <p><strong>From:</strong> ${name} (${email})</p>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <p><strong>Message:</strong></p>
-          <p>${message}</p>
-        `
-      };
-
-      await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully');
-      res.json({ message: "Support request submitted successfully" });
-    } catch (error) {
-      console.error('Detailed error:', error);
-      res.status(500).json({ 
-        message: "Failed to submit support request", 
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
 
   // Create admin user if it doesn't exist
   try {
@@ -175,7 +136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (req.isAuthenticated()) {
       return next();
     }
-    res.status(401).json({ message: "Unauthorized" });
+    res.status(401).json({
+      message: "Login required to send a message."
+    });
   };
 
   const isAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -204,6 +167,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: "Invalid user data", error: (error as Error).message });
     }
   });
+
+
+  app.post("/api/support",isAuthenticated, async (req, res) => {
+    try {
+      console.log('Request received:', req.body); // Debug log
+      const { name, email, subject, message } = req.body;
+
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.error('SMTP credentials not configured');
+        return res.status(500).json({ message: "Email service not configured" });
+      }
+
+      const mailOptions = {
+        from: `"${name}"`,
+        to: process.env.SMTP_USER,
+        replyTo: email,
+        subject: `Support Request: ${subject}`,
+        html: `
+          <h2>New Support Request</h2>
+          <p><strong>From:</strong> ${name} (${email})</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully');
+      res.json({ message: "Support request submitted successfully" });
+    } catch (error) {
+      console.error('Detailed error:', error);
+      res.status(500).json({ 
+        message: "Failed to submit support request", 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+
 
   app.post("/api/auth/login", (req, res, next) => {
     try {
@@ -695,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/wholesale-application", async (req, res) => {
+  app.post("/api/wholesale-application",isAuthenticated, async (req, res) => {
     console.log('Received wholesale application request');
     console.log('Request body:', req.body);
     
@@ -751,6 +757,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to process application",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  app.post("/api/newsletter-subscribe", isAuthenticated, async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Invalid email address." });
+      }
+
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        return res.status(500).json({ message: "Email service not configured." });
+      }
+
+      const mailOptions = {
+        from: `"Newsletter Signup" <${process.env.SMTP_USER}>`,
+        to: process.env.SMTP_USER,
+        subject: "New Newsletter Subscription",
+        html: `<p>New newsletter subscription from: <strong>${email}</strong></p>`
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ message: "Subscription email sent to admin." });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send subscription email.", error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.post("/api/submit-contact-form", isAuthenticated, async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required." });
+      }
+
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        return res.status(500).json({ message: "Email service not configured." });
+      }
+
+      const mailOptions = {
+        from: `"${name}" <${email}>`,
+        to: process.env.SMTP_USER,
+        subject: `Contact Form: ${subject}`,
+        html: `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>Message:</strong></p>
+          <p>${message}</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ message: "Your message has been sent successfully." });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send your message.", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

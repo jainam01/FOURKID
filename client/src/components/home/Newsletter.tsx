@@ -23,21 +23,29 @@ const Newsletter = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
     try {
-      // In a real app, we would send this to an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const res = await fetch("http://localhost:3001/api/newsletter-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to subscribe.");
+      }
+
       toast({
         title: "Success!",
         description: "You've been subscribed to our newsletter.",
       });
       
       setEmail("");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to subscribe. Please try again later.",
+        description: error.message || "Failed to subscribe. Please try again later.",
         variant: "destructive",
       });
     } finally {
