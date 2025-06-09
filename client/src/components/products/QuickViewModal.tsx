@@ -147,15 +147,6 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-4 z-10"
-          onClick={onClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Product Image Carousel */}
           <div className="relative aspect-square">

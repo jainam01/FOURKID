@@ -1,5 +1,5 @@
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, UseQueryOptions } from "@tanstack/react-query";
 import { 
   Product, Category, InsertProduct, InsertCategory, 
   CartItem, InsertCartItem, WatchlistItem, InsertWatchlistItem,
@@ -79,12 +79,25 @@ export function useProducts() {
   });
 }
 
-export function useProduct(id: number, p0: { enabled: boolean; }) {
-  return useQuery<ProductWithDetails>({
+// In lib/api.ts
+
+export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWithDetails, Error, ProductWithDetails>, 'queryKey' | 'queryFn'>) {
+  return useQuery({
     queryKey: ['/api/products', id],
-    enabled: !!id,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/products/${id}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch product');
+      }
+      return res.json();
+    },
+    enabled: !!id, 
+    ...options,
   });
 }
+// ====================================================================
+// END: CORRECTED FUNCTION
+// ====================================================================
 
 export function useProductsByCategory(categoryId: number) {
   return useQuery<Product[]>({
@@ -143,6 +156,8 @@ export function useDeleteProduct() {
     }
   });
 }
+
+// ... (rest of the file is the same)
 
 // Cart API
 export function useCart() {

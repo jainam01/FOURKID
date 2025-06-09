@@ -152,6 +152,8 @@ const ProductForm = () => {
     }
   };
 
+  console.log("Editing product:", product);
+
   if (isEditing && isLoadingProduct) {
     return (
       <AdminLayout>

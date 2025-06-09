@@ -52,7 +52,7 @@ const Watchlist = () => {
         onError: () => {
           toast({
             title: "Error",
-            description: "Failed to add item to cart. Please try again.",
+            description: "This product is already in your watchlist.",
             variant: "destructive"
           });
         }
