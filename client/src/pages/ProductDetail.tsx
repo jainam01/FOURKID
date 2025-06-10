@@ -150,9 +150,21 @@ const ProductDetail = () => {
         onSuccess: () => {
           toast({ title: "Added to watchlist", description: `${product?.name} has been added to your watchlist.` });
         },
-        onError: (err) => {
+        onError: (err: Error) => {
           console.error("Add to watchlist error:", err);
-          toast({ title: "Error", description: "Failed to add item to watchlist. Please try again.", variant: "destructive" });
+          if (err.message === "Product is already in your watchlist.") {
+            toast({
+              title: "Info",
+              description: "This product is already in your watchlist.",
+              variant: "default"
+            });
+          } else {
+            toast({
+              title: "Error",
+              description: "Failed to add item to watchlist. Please try again.",
+              variant: "destructive"
+            });
+          }
         }
       }
     );

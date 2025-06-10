@@ -1,10 +1,13 @@
+// src/lib/api.ts
+
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, UseQueryOptions } from "@tanstack/react-query";
 import { 
   Product, Category, InsertProduct, InsertCategory, 
   CartItem, InsertCartItem, WatchlistItem, InsertWatchlistItem,
   Order, InsertOrder, InsertOrderItem, Banner, InsertBanner,
-  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems
+  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
+  ProductVariant // Make sure ProductVariant is exported from your schema
 } from "@shared/schema";
 
 // Categories API
@@ -79,8 +82,6 @@ export function useProducts() {
   });
 }
 
-// In lib/api.ts
-
 export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWithDetails, Error, ProductWithDetails>, 'queryKey' | 'queryFn'>) {
   return useQuery({
     queryKey: ['/api/products', id],
@@ -95,9 +96,6 @@ export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWit
     ...options,
   });
 }
-// ====================================================================
-// END: CORRECTED FUNCTION
-// ====================================================================
 
 export function useProductsByCategory(categoryId: number) {
   return useQuery<Product[]>({
@@ -157,7 +155,6 @@ export function useDeleteProduct() {
   });
 }
 
-// ... (rest of the file is the same)
 
 // Cart API
 export function useCart() {
@@ -166,11 +163,27 @@ export function useCart() {
   });
 }
 
+// ====================================================================
+// START: CORRECTED FUNCTION
+// We define an explicit type for the mutation variables.
+// ====================================================================
+
+// This is the explicit contract between the component and the hook
+type AddToCartVariables = {
+  productId: number;
+  quantity: number;
+  variantInfo?: ProductVariant[];
+};
+
 export function useAddToCart() {
-  return useMutation<CartItem, Error, Omit<InsertCartItem, 'userId'>>({
+  // Use the new, simpler type for the mutation variables (the 3rd generic argument)
+  return useMutation<CartItem, Error, AddToCartVariables>({
     mutationFn: async (cartItemData) => {
-      console.log("cartItemData", cartItemData);
       const res = await apiRequest("POST", "/api/cart", cartItemData);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to add to cart');
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -178,6 +191,9 @@ export function useAddToCart() {
     }
   });
 }
+// ====================================================================
+// END: CORRECTED FUNCTION
+// ====================================================================
 
 export function useUpdateCartItem() {
   return useMutation<CartItem, Error, { id: number; quantity: number }>({
@@ -216,6 +232,11 @@ export function useClearCart() {
 }
 
 // Watchlist API
+// --- Define an explicit type for AddToWatchlist as well for consistency ---
+type AddToWatchlistVariables = {
+  productId: number;
+};
+
 export function useWatchlist() {
   return useQuery<WatchlistItemWithProduct[]>({
     queryKey: ['/api/watchlist'],
@@ -223,7 +244,7 @@ export function useWatchlist() {
 }
 
 export function useAddToWatchlist() {
-  return useMutation<WatchlistItem, Error, Omit<InsertWatchlistItem, 'userId'>>({
+  return useMutation<WatchlistItem, Error, AddToWatchlistVariables>({
     mutationFn: async (watchlistItemData) => {
       const res = await apiRequest("POST", "/api/watchlist", watchlistItemData);
       if (!res.ok) {

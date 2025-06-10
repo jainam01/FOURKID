@@ -43,7 +43,7 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
       { 
         productId: product.id, 
         quantity: 1,
-        variantInfo: null  // Explicitly set to null for products without variants
+        variantInfo: undefined  // Changed from null to undefined
       },
       {
         onSuccess: () => {
@@ -86,10 +86,14 @@ const ProductCard = ({ product, onQuickView }: ProductCardProps) => {
             description: `${product.name} has been added to your watchlist.`
           });
         },
-        onError: () => {
+        onError: (err: Error) => {
+          console.error("Add to watchlist error:", err);
+          const description = err.message === "Product is already in your watchlist." 
+            ? "This product is already in your watchlist." 
+            : "Failed to add item to watchlist. Please try again.";
           toast({
             title: "Error",
-            description: "Failed to add item to watchlist. Please try again.",
+            description,
             variant: "destructive"
           });
         }

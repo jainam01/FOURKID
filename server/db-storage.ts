@@ -197,13 +197,20 @@ export class DbStorage implements IStorage {
   async addToCart(itemData: InsertCartItem): Promise<CartItem> {
     const { variantInfo, ...rest } = itemData;
     console.log("addToCart received itemData:", itemData);
+
+    // Determine the variant comparison based on whether variantInfo is provided
+    const variantComparisonCondition = 
+      variantInfo !== undefined && variantInfo !== null
+        ? sql`${cartItems.variantInfo}::jsonb = ${JSON.stringify(variantInfo)}::jsonb`
+        : sql`${cartItems.variantInfo} IS NULL`;
+
     // Check if item already exists in cart
     const existingItem = await db.select()
       .from(cartItems)
       .where(and(
         eq(cartItems.userId, itemData.userId),
         eq(cartItems.productId, itemData.productId),
-        sql`${cartItems.variantInfo}::jsonb = ${JSON.stringify(variantInfo)}::jsonb`
+        variantComparisonCondition
       ));
 
     console.log("Existing item check result:", existingItem);
