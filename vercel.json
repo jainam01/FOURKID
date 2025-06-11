@@ -19,11 +19,12 @@
         "dest": "dist/index.js"
       },
       {
-        "handle": "filesystem"
+        "src": "/assets/(.*)",
+        "dest": "dist/public/assets/$1"
       },
       {
         "src": "/(.*)",
-        "dest": "dist/index.html"
+        "dest": "dist/public/index.html"
       }
     ]
   }
