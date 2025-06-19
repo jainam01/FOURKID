@@ -145,7 +145,7 @@ const Support = () => {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Jane Doe"
+                  placeholder=""
                   required
                   className="w-full"
                 />
@@ -160,7 +160,7 @@ const Support = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="jane@example.com"
+                  placeholder="XYZ@example.com"
                   required
                   className="w-full"
                 />

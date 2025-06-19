@@ -4,7 +4,7 @@ import { users } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 const pool = new Pool({
-  connectionString: "postgres://postgres:jainam1921@localhost:5000/wholesale_wizard",
+  connectionString: process.env.DATABASE_URL
 });
 
 const db = drizzle(pool);
