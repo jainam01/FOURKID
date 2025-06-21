@@ -11,12 +11,27 @@ import createMemoryStore from "memorystore";
 import { z } from "zod";
 import nodemailer from "nodemailer";
 import cors from 'cors';
+import connectPgSimple from 'connect-pg-simple';
+import { Pool } from 'pg';
 
-const MemoryStore = createMemoryStore(session);
+
 const storage = new DbStorage();
+const PgStore = connectPgSimple(session);
+
+const sessionPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add these middleware at the very top
+
+  
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+
+
   app.use(cors({
     origin:  process.env.FRONTEND_URL,
     credentials: true
@@ -67,19 +82,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "fourkids-secret-key",
+      // Use a persistent store instead of MemoryStore
+      store: new PgStore({
+        pool: sessionPool,
+        tableName: 'user_sessions' // A table will be created automatically
+      }),
+      secret: process.env.SESSION_SECRET || "a-very-strong-secret-in-development",
       resave: false,
       saveUninitialized: false,
       cookie: { 
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production', // Will be true in production
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        sameSite: 'lax', // 'lax' is the correct and more secure setting for this use case
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      },
-      store: new MemoryStore({
-        checkPeriod: 86400000, // prune expired entries every 24h
-        max: 1000 // maximum number of sessions
-      })
+      }
     })
   );
 
