@@ -18,7 +18,7 @@ const storage = new DbStorage();
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add these middleware at the very top
   app.use(cors({
-    origin: 'http://localhost:3000', // Your frontend URL
+    origin:  process.env.FRONTEND_URL,
     credentials: true
   }));
   app.use(express.json());
@@ -73,6 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       },
       store: new MemoryStore({
@@ -85,6 +86,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup passport
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Debug middleware for session issues
+  app.use((req, res, next) => {
+    console.log('Session debug:', {
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      user: req.user ? { id: (req.user as any).id, email: (req.user as any).email } : null,
+      cookies: req.headers.cookie ? 'present' : 'missing'
+    });
+    next();
+  });
 
   // Configure passport
   passport.use(

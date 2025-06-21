@@ -40,8 +40,8 @@ const WholesaleProgram = () => {
     console.log('Submitting data:', data);
 
     try {
-      console.log('Sending request to:', 'http://localhost:3001/api/wholesale-application');
-      const response = await fetch('http://localhost:3001/api/wholesale-application', {
+      console.log('Sending request to:', '/api/wholesale-application');
+      const response = await fetch('/api/wholesale-application', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
