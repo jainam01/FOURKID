@@ -6,8 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Layouts & Global Components
-import Header from "@/components/layout/header/Header";
-import Footer from "@/components/layout/footer/Footer";
+import { HeaderLayout } from "@/components/layout/header/headerlayout"; 
 import AdminLayout from "@/components/admin/AdminLayout"; // Assuming this is your AdminLayout path
 
 // Page Components
@@ -71,10 +70,8 @@ function App() {
 
   // Router for Public/User pages
   const PublicUserRoutes = () => (
-    <div className="flex flex-col min-h-screen">
-      <Header />
+      <HeaderLayout>
       <ScrollToTop />
-      <main className="flex-grow">
         <Switch>
           <Route path="/" component={Home} />
 
@@ -101,9 +98,7 @@ function App() {
           {/* Fallback for non-admin, non-matched routes */}
           <Route component={NotFound} />
         </Switch>
-      </main>
-      <Footer />
-    </div>
+        </HeaderLayout>
   );
 
 
