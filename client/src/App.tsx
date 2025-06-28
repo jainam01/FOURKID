@@ -39,6 +39,7 @@ import RefundPolicy from "./components/layout/footer/Information/RefundPolicy";
 import TermsAndConditions from "@/components/layout/footer/Information/t&c";
 import PrivacyPolicy from "@/components/layout/footer/Information/PrivacyPolicy";
 import ScrollToTop from "@/lib/ScrollToTop";
+import Review from "@/pages/admin/Review";
 // Contexts (if needed at this level, otherwise they might be within specific layouts)
 // For simplicity, let's assume they are not strictly needed to wrap the entire App
 // but rather specific parts (e.g., CartProvider around non-admin routes if Admin doesn't use cart)
@@ -61,6 +62,7 @@ function App() {
       <Route path="/admin/orders" component={ManageOrders} />
       <Route path="/admin/users" component={ManageUsers} />
       <Route path="/admin/banners" component={ManageBanners} />
+      <Route path="/admin/reviews" component={Review} />
       {/* Fallback for unknown admin sub-routes, can redirect or show admin 404 */}
       <Route>
         <NotFound /> {/* Or a specific AdminNotFound component */}

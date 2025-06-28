@@ -40,7 +40,7 @@ const Watchlist = () => {
       { 
         productId, 
         quantity: 1,
-        variantInfo: null  // Set to null if no variants
+        variantInfo: undefined
       },
       {
         onSuccess: () => {
@@ -49,12 +49,19 @@ const Watchlist = () => {
             description: `${name} has been added to your cart.`
           });
         },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "This product is already in your watchlist.",
-            variant: "destructive"
-          });
+        onError: (error: Error) => {
+          if (error.message && error.message.toLowerCase().includes("product already in cart")) {
+            toast({
+              title: "Already in Cart",
+              description: "This product is already in your cart.",
+            });
+          } else {
+            toast({
+              title: "Error",
+              description: error.message || "Failed to add item to cart.",
+              variant: "destructive"
+            });
+          }
         }
       }
     );
@@ -77,8 +84,13 @@ const Watchlist = () => {
       </div>
     );
   }
+  
+  // --- THE FIX IS HERE (Part 1) ---
+  // We create a new, safe array by filtering out any items that are missing 
+  // the crucial `product` data before we attempt to render them.
+  const validWatchlistItems = watchlistItems.filter(item => item && item.product);
 
-  if (watchlistItems.length === 0) {
+  if (validWatchlistItems.length === 0) {
     return (
       <>
         <Helmet>
@@ -113,7 +125,7 @@ const Watchlist = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Your Watchlist</h1>
+          <h1 className="text-2xl font-bold">Your Watchlist ({validWatchlistItems.length})</h1>
           <Button asChild>
             <Link href="/cart">
               View Cart <ChevronRight className="h-4 w-4 ml-1" />
@@ -121,8 +133,10 @@ const Watchlist = () => {
           </Button>
         </div>
         
+        {/* --- THE FIX IS HERE (Part 2) --- */}
+        {/* We now map over the guaranteed 'validWatchlistItems' array. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {watchlistItems.map(item => (
+          {validWatchlistItems.map(item => (
             <Card key={item.id} className="group relative overflow-hidden">
               <div className="absolute top-2 right-2 z-10">
                 <Button

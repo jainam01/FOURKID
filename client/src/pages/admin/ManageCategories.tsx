@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "wouter";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,10 +16,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useCategories, useDeleteCategory } from "@/lib/api";
-import { Edit, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, MoreHorizontal, Plus, Search, Trash2, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Category } from "@shared/schema";
 
 const ManageCategories = () => {
@@ -40,7 +41,6 @@ const ManageCategories = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
-  // Filter categories based on search query
   const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -52,13 +52,13 @@ const ManageCategories = () => {
     try {
       await deleteCategory.mutateAsync(categoryToDelete.id);
       toast({
-        title: "Category deleted",
-        description: `${categoryToDelete.name} has been successfully deleted.`
+        title: "Category Deleted",
+        description: `"${categoryToDelete.name}" has been successfully deleted.`
       });
       setCategoryToDelete(null);
     } catch (error) {
       toast({
-        title: "Error",
+        title: "Deletion Failed",
         description: "Failed to delete category. It may have associated products.",
         variant: "destructive"
       });
@@ -66,91 +66,114 @@ const ManageCategories = () => {
   };
 
   return (
-    <div>
+    <>
       <Helmet>
-        <title>Manage Categories - Fourkids Wholesale</title>
-        <meta name="description" content="Manage product categories for Fourkids wholesale e-commerce platform" />
+        <title>Manage Categories - Fourkids Admin</title>
       </Helmet>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Manage Categories</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+            <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
+            <p className="text-muted-foreground">Organize your products into categories.</p>
+        </div>
         <Button asChild>
           <Link href="/admin/categories/new">
             <Plus className="h-4 w-4 mr-2" />
-            Add Category
+            Add New Category
           </Link>
         </Button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search categories..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
+      <Card className="mb-6">
+        <CardContent className="p-4">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                    placeholder="Search categories by name or description..."
+                    className="pl-10 h-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
-        <div className="py-8 text-center">Loading categories...</div>
+        <div className="py-12 text-center text-muted-foreground">Loading categories...</div>
       ) : (
         <>
           {filteredCategories.length === 0 ? (
-            <div className="py-8 text-center border rounded-lg">
-              {searchQuery ? "No categories match your search criteria." : "No categories found."}
+            <div className="py-12 text-center text-muted-foreground border-dashed border-2 rounded-lg">
+              <p className="font-medium">{searchQuery ? "No categories match your search." : "No categories found."}</p>
+              <p className="text-sm mt-2">{searchQuery ? "Try a different search term." : "Get started by adding a new category."}</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCategories.map((category) => (
-                    <TableRow key={category.id}>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>{category.slug}</TableCell>
-                      <TableCell>{category.description || "-"}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
+            <div>
+              {/* --- DESKTOP VIEW: TABLE --- */}
+              <div className="hidden md:block border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCategories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{category.slug}</TableCell>
+                        <TableCell className="text-muted-foreground max-w-sm truncate">{category.description || "-"}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild><Link href={`/category/${category.slug}`} target="_blank"><Eye className="h-4 w-4 mr-2"/>View on Site</Link></DropdownMenuItem>
+                              <DropdownMenuItem asChild><Link href={`/admin/categories/edit/${category.id}`}><Edit className="h-4 w-4 mr-2"/>Edit</Link></DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-600" onClick={() => setCategoryToDelete(category)}><Trash2 className="h-4 w-4 mr-2"/>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* --- MOBILE VIEW: CARDS --- */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+                {filteredCategories.map((category) => (
+                  <Card key={category.id}>
+                    <CardHeader>
+                        <CardTitle>{category.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{category.slug}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2 h-[40px]">
+                        {category.description || "No description provided."}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="bg-gray-50 p-2 border-t flex justify-end">
+                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
+                            <Button variant="ghost" size="sm" className="flex-1 justify-center">
+                              Actions <MoreHorizontal className="ml-2 h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/category/${category.slug}`}>View Products</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/categories/edit/${category.id}`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => setCategoryToDelete(category)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/category/${category.slug}`} target="_blank"><Eye className="h-4 w-4 mr-2"/>View on Site</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/admin/categories/edit/${category.id}`}><Edit className="h-4 w-4 mr-2"/>Edit</Link></DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-600" onClick={() => setCategoryToDelete(category)}><Trash2 className="h-4 w-4 mr-2"/>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </>
@@ -162,8 +185,7 @@ const ManageCategories = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the category "{categoryToDelete?.name}". 
-              This action cannot be undone. Products in this category may become orphaned.
+              This will permanently delete the category "{categoryToDelete?.name}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -177,7 +199,7 @@ const ManageCategories = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 };
 

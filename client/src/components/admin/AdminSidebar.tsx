@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Store,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -58,6 +59,7 @@ const AdminSidebar = ({ onNavigate }: AdminSidebarProps) => {
     { href: "/admin/orders", label: "Orders", icon: <ShoppingCart className="h-5 w-5" /> },
     { href: "/admin/users", label: "Users", icon: <Users className="h-5 w-5" /> },
     { href: "/admin/banners", label: "Banners", icon: <Images className="h-5 w-5" /> },
+    { href: "/admin/reviews", label: "Reviews", icon: <MessageSquare className="h-5 w-5" /> },
     { href: "/", label: "View Store", icon: <Store className="h-5 w-5" /> },
   ];
 

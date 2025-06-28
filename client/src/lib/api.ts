@@ -1,26 +1,27 @@
-// src/lib/api.ts
-
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useQuery, useMutation, UseQueryOptions } from "@tanstack/react-query";
 import { 
   Product, Category, InsertProduct, InsertCategory, 
-  CartItem, InsertCartItem, WatchlistItem, InsertWatchlistItem,
-  Order, InsertOrder, InsertOrderItem, Banner, InsertBanner,
+  CartItem, WatchlistItem,
+  Order, InsertOrderItem, Banner, InsertBanner,
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
-  ProductVariant // Make sure ProductVariant is exported from your schema
+  ProductVariant, AdminReview
 } from "@shared/schema";
 
 // Categories API
 export function useCategories() {
-  return useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-  });
+  return useQuery<Category[]>({ queryKey: ['/api/categories'] });
 }
 
-export function useCategory(id: number) {
-  return useQuery<Category>({
+export function useCategory(id?: number, options?: Omit<UseQueryOptions<Category, Error, Category>, 'queryKey' | 'queryFn'>) {
+  return useQuery<Category, Error, Category>({
     queryKey: ['/api/categories', id],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/categories/${id}`);
+      return await res.json();
+    },
     enabled: !!id,
+    ...options,
   });
 }
 
@@ -30,9 +31,7 @@ export function useCategoryBySlug(slug: string) {
     enabled: !!slug,
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/categories/slug/${slug}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch category by slug');
-      }
+      if (!res.ok) throw new Error('Failed to fetch category by slug');
       return res.json();
     },
   });
@@ -44,9 +43,7 @@ export function useCreateCategory() {
       const res = await apiRequest("POST", "/api/categories", categoryData);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/categories'] }); }
   });
 }
 
@@ -69,17 +66,13 @@ export function useDeleteCategory() {
       const res = await apiRequest("DELETE", `/api/categories/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/categories'] }); }
   });
 }
 
 // Products API
 export function useProducts() {
-  return useQuery<ProductWithDetails[]>({
-    queryKey: ['/api/products'],
-  });
+  return useQuery<ProductWithDetails[]>({ queryKey: ['/api/products'] });
 }
 
 export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWithDetails, Error, ProductWithDetails>, 'queryKey' | 'queryFn'>) {
@@ -87,9 +80,7 @@ export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWit
     queryKey: ['/api/products', id],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/products/${id}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch product');
-      }
+      if (!res.ok) throw new Error('Failed to fetch product');
       return res.json();
     },
     enabled: !!id, 
@@ -98,10 +89,7 @@ export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWit
 }
 
 export function useProductsByCategory(categoryId: number) {
-  return useQuery<Product[]>({
-    queryKey: ['/api/products/category', categoryId],
-    enabled: !!categoryId,
-  });
+  return useQuery<Product[]>({ queryKey: ['/api/products/category', categoryId], enabled: !!categoryId });
 }
 
 export function useProductsByCategorySlug(slug: string) {
@@ -110,9 +98,7 @@ export function useProductsByCategorySlug(slug: string) {
     enabled: !!slug,
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/products/category-slug/${slug}`);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch products for category slug: ${slug}`);
-      }
+      if (!res.ok) throw new Error(`Failed to fetch products for category slug: ${slug}`);
       return res.json();
     },
   });
@@ -124,9 +110,7 @@ export function useCreateProduct() {
       const res = await apiRequest("POST", "/api/products", productData);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/products'] }); }
   });
 }
 
@@ -149,34 +133,22 @@ export function useDeleteProduct() {
       const res = await apiRequest("DELETE", `/api/products/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/products'] }); }
   });
 }
-
 
 // Cart API
-export function useCart() {
-  return useQuery<CartItemWithProduct[]>({
-    queryKey: ['/api/cart'],
-  });
-}
-
-// ====================================================================
-// START: CORRECTED FUNCTION
-// We define an explicit type for the mutation variables.
-// ====================================================================
-
-// This is the explicit contract between the component and the hook
 type AddToCartVariables = {
   productId: number;
   quantity: number;
   variantInfo?: ProductVariant[];
 };
 
+export function useCart() {
+  return useQuery<CartItemWithProduct[]>({ queryKey: ['/api/cart'] });
+}
+
 export function useAddToCart() {
-  // Use the new, simpler type for the mutation variables (the 3rd generic argument)
   return useMutation<CartItem, Error, AddToCartVariables>({
     mutationFn: async (cartItemData) => {
       const res = await apiRequest("POST", "/api/cart", cartItemData);
@@ -186,14 +158,9 @@ export function useAddToCart() {
       }
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
   });
 }
-// ====================================================================
-// END: CORRECTED FUNCTION
-// ====================================================================
 
 export function useUpdateCartItem() {
   return useMutation<CartItem, Error, { id: number; quantity: number }>({
@@ -201,9 +168,7 @@ export function useUpdateCartItem() {
       const res = await apiRequest("PUT", `/api/cart/${id}`, { quantity });
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
   });
 }
 
@@ -213,9 +178,7 @@ export function useRemoveFromCart() {
       const res = await apiRequest("DELETE", `/api/cart/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
   });
 }
 
@@ -225,22 +188,77 @@ export function useClearCart() {
       const res = await apiRequest("DELETE", "/api/cart");
       return await res.json();
     },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
+  });
+}
+
+// User Reviews API
+interface AddReviewPayload {
+  productId: number;
+  rating: number;
+  comment: string;
+}
+
+export function useAddReview() {
+  return useMutation<{ message: string }, Error, AddReviewPayload>({
+    mutationFn: async (payload: AddReviewPayload) => {
+      const res = await apiRequest("POST", "/api/reviews", payload);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: 'Failed to add review' }));
+        throw new Error(error.message || 'Failed to add review');
+      }
+      return await res.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
     }
   });
 }
 
+// Admin Reviews API
+export function useAdminGetAllReviews() {
+  return useQuery<AdminReview[]>({
+    queryKey: ['/api/admin/reviews'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/reviews");
+      if (!res.ok) {
+        throw new Error('Failed to fetch reviews');
+      }
+      return await res.json();
+    },
+  });
+}
+
+export function useApproveReview(options?: { onSuccess?: () => void; onError?: (error: Error) => void; }) {
+  return useMutation<{ message: string }, Error, number>({
+    mutationFn: async (reviewId: number) => {
+      const res = await apiRequest("PUT", `/api/admin/reviews/${reviewId}/approve`);
+      if (!res.ok) throw new Error("Failed to approve review.");
+      return res.json();
+    },
+    ...options,
+  });
+}
+
+export function useDeleteReview(options?: { onSuccess?: () => void; onError?: (error: Error) => void; }) {
+  return useMutation<{ message: string }, Error, number>({
+    mutationFn: async (reviewId: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/reviews/${reviewId}`);
+      if (!res.ok) throw new Error("Failed to delete review.");
+      return res.json();
+    },
+    ...options,
+  });
+}
+
+
 // Watchlist API
-// --- Define an explicit type for AddToWatchlist as well for consistency ---
 type AddToWatchlistVariables = {
   productId: number;
 };
 
 export function useWatchlist() {
-  return useQuery<WatchlistItemWithProduct[]>({
-    queryKey: ['/api/watchlist'],
-  });
+  return useQuery<WatchlistItemWithProduct[]>({ queryKey: ['/api/watchlist'] });
 }
 
 export function useAddToWatchlist() {
@@ -248,14 +266,12 @@ export function useAddToWatchlist() {
     mutationFn: async (watchlistItemData) => {
       const res = await apiRequest("POST", "/api/watchlist", watchlistItemData);
       if (!res.ok) {
-        const error = await res.json();
+        const error = await res.json().catch(() => ({ message: 'An unknown API error occurred' }));
         throw new Error(error.message || 'Failed to add to watchlist');
       }
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] }); }
   });
 }
 
@@ -265,17 +281,13 @@ export function useRemoveFromWatchlist() {
       const res = await apiRequest("DELETE", `/api/watchlist/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] }); }
   });
 }
 
 // Order API
 export function useOrders() {
-  return useQuery<OrderWithItems[]>({
-    queryKey: ['/api/orders'],
-  });
+  return useQuery<OrderWithItems[]>({ queryKey: ['/api/orders'] });
 }
 
 export function useOrder(id: number) {
@@ -314,10 +326,7 @@ export function useUpdateOrderStatus() {
 // Banner API
 export function useBanners(type?: string) {
   const queryKey = type ? ['/api/banners', { type }] : ['/api/banners'];
-  
-  return useQuery<Banner[]>({
-    queryKey,
-  });
+  return useQuery<Banner[]>({ queryKey });
 }
 
 export function useBanner(id: number) {
@@ -333,9 +342,7 @@ export function useCreateBanner() {
       const res = await apiRequest("POST", "/api/banners", bannerData);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/banners'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/banners'] }); }
   });
 }
 
@@ -358,8 +365,6 @@ export function useDeleteBanner() {
       const res = await apiRequest("DELETE", `/api/banners/${id}`);
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/banners'] });
-    }
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/banners'] }); }
   });
 }

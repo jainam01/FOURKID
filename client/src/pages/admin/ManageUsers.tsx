@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,16 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, MoreHorizontal, Search } from "lucide-react";
+import { Eye, Search, KeyRound, Mail, Phone, Building, MapPin, User as UserIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,184 +24,195 @@ import {
 import { User } from "@shared/schema";
 import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const ManageUsers = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewUser, setViewUser] = useState<User | null>(null);
 
-  // Fetch users
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.businessName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // --- UPDATED SEARCH LOGIC ---
+  const filteredUsers = users.filter(user => {
+    const query = searchQuery.trim();
+    if (!query) return true; // Show all users if search is empty
 
-  // Get user initials for avatar
+    const isNumericQuery = !isNaN(Number(query));
+    
+    // If the query is a number, ONLY search by User ID.
+    if (isNumericQuery) {
+        return user.id.toString() === query;
+    }
+    
+    // Otherwise, search by text fields.
+    const lowerCaseQuery = query.toLowerCase();
+    return (
+        user.name.toLowerCase().includes(lowerCaseQuery) ||
+        user.email.toLowerCase().includes(lowerCaseQuery) ||
+        user.businessName.toLowerCase().includes(lowerCaseQuery)
+    );
+  });
+
   const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
+    return name.split(' ').map(part => part[0]).join('').toUpperCase().substring(0, 2);
   };
 
   return (
-    <div>
+    <>
       <Helmet>
-        <title>Manage Users - Fourkids Wholesale</title>
-        <meta name="description" content="Manage users for Fourkids wholesale e-commerce platform" />
+        <title>Manage Users - Fourkids Admin</title>
+        <meta name="description" content="Manage user accounts for the Fourkids platform." />
       </Helmet>
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Manage Users</h1>
-      </div>
-
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search users by name, email or business name..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div>
+          <h1 className="text-2xl font-bold">Manage Users</h1>
+          <p className="text-muted-foreground">View and manage customer accounts.</p>
         </div>
       </div>
 
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by Name, Email, Business, or User ID..."
+              className="pl-10 h-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {isLoading ? (
-        <div className="py-8 text-center">Loading users...</div>
+        <div className="py-12 text-center text-muted-foreground">Loading users...</div>
       ) : (
         <>
           {filteredUsers.length === 0 ? (
-            <div className="py-8 text-center border rounded-lg">
-              {searchQuery ? "No users match your search criteria." : "No users found."}
+            <div className="py-12 text-center text-muted-foreground border-dashed border-2 rounded-lg">
+              <p className="font-medium">{searchQuery ? "No users match your search." : "No users registered."}</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Business Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>{getUserInitials(user.name)}</AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{user.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{user.businessName}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phoneNumber}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setViewUser(user)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+            <>
+              {/* --- DESKTOP VIEW: TABLE (Hidden on mobile) --- */}
+              <div className="hidden md:block border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Business Name</TableHead>
+                      <TableHead>User ID</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar><AvatarFallback>{getUserInitials(user.name)}</AvatarFallback></Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.businessName}</TableCell>
+                        <TableCell><Badge variant="outline">#{user.id}</Badge></TableCell>
+                        <TableCell>{format(new Date(user.createdAt), "MMM d, yyyy")}</TableCell>
+                        <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => setViewUser(user)}>
+                              <Eye className="mr-2 h-4 w-4" /> View Details
+                            </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* --- MOBILE VIEW: CARDS (Hidden on desktop) --- */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+                {filteredUsers.map((user) => (
+                  <Card key={user.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setViewUser(user)}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar><AvatarFallback>{getUserInitials(user.name)}</AvatarFallback></Avatar>
+                          <div>
+                            <p className="font-semibold">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.businessName}</p>
+                          </div>
+                        </div>
+                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
 
       {/* User Details Dialog */}
       <Dialog open={!!viewUser} onOpenChange={() => setViewUser(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
           </DialogHeader>
-
           {viewUser && (
-            <div className="space-y-4">
+            <div className="space-y-4 pt-4">
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-lg">{getUserInitials(viewUser.name)}</AvatarFallback>
-                </Avatar>
+                <Avatar className="h-16 w-16"><AvatarFallback className="text-xl">{getUserInitials(viewUser.name)}</AvatarFallback></Avatar>
                 <div>
-                  <h3 className="text-lg font-medium">{viewUser.name}</h3>
-                  <p className="text-sm text-muted-foreground">{viewUser.email}</p>
+                  <h3 className="text-xl font-bold">{viewUser.name}</h3>
+                  <p className="text-muted-foreground">{viewUser.businessName}</p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Business Name</h4>
-                  <p>{viewUser.businessName}</p>
+              <Separator />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                <div className="flex items-start gap-3">
+                  <KeyRound className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                  <div><p className="font-medium">User ID</p><p className="text-muted-foreground">{viewUser.id}</p></div>
                 </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Phone Number</h4>
-                  <p>{viewUser.phoneNumber}</p>
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                  <div><p className="font-medium">Email</p><p className="text-muted-foreground">{viewUser.email}</p></div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                  <div><p className="font-medium">Phone</p><p className="text-muted-foreground">{viewUser.phoneNumber}</p></div>
                 </div>
                 {viewUser.gstin && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">GSTIN</h4>
-                    <p>{viewUser.gstin}</p>
+                  <div className="flex items-start gap-3">
+                    <Building className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                    <div><p className="font-medium">GSTIN</p><p className="text-muted-foreground">{viewUser.gstin}</p></div>
                   </div>
                 )}
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Role</h4>
-                  <Badge variant={viewUser.role === "admin" ? "default" : "secondary"}>
-                    {viewUser.role}
-                  </Badge>
+                <div className="sm:col-span-2 flex items-start gap-3">
+                   <MapPin className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                   <div><p className="font-medium">Address</p><p className="text-muted-foreground">{viewUser.address}</p></div>
                 </div>
-                <div className="md:col-span-2">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Address</h4>
-                  <p className="text-sm">{viewUser.address}</p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Joined</h4>
-                  <p>{format(new Date(viewUser.createdAt), "MMMM d, yyyy")}</p>
+                <div className="flex items-start gap-3">
+                    <UserIcon className="h-5 w-5 mt-0.5 text-muted-foreground" />
+                    <div><p className="font-medium">Role</p><Badge variant={viewUser.role === "admin" ? "default" : "secondary"}>{viewUser.role}</Badge></div>
                 </div>
               </div>
             </div>
           )}
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewUser(null)}>
-              Close
-            </Button>
+            <Button variant="outline" onClick={() => setViewUser(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
 

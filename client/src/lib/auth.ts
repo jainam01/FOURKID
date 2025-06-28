@@ -74,3 +74,4 @@ export function useLogout() {
 export function isAdmin(user: User | null | undefined) {
   return user?.role === "admin";
 }
+
