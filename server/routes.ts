@@ -715,7 +715,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  
+    // Review Routes
+  // POST /api/reviews - Allows a logged-in user to submit a review for a product.
+  app.post("/api/reviews", isAuthenticated, async (req, res) => {
+    console.log("Received review POST", req.body);
+    try {
+      const userId = (req.user as any).id;
+      
+      // Validate the incoming review data
+      const reviewSchema = z.object({
+        productId: z.number(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().min(1, "Comment cannot be empty."),
+      });
+      const reviewData = reviewSchema.parse(req.body);
+
+      // Create the review in the database with a 'pending' status
+      const newReview = await storage.createReview({
+        ...reviewData,
+        userId,
+        status: 'pending' // All new reviews must be approved by an admin
+      });
+      
+      res.status(201).json({ message: "Review submitted successfully and is pending approval." });
+
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid review data", errors: error.flatten() });
+      }
+      console.error("Error submitting review:", error);
+      res.status(500).json({ message: "Failed to submit review", error: (error as Error).message });
+    }
+  });
+
+  // GET /api/admin/reviews - Allows an admin to get all reviews with user/product details.
+  app.get("/api/admin/reviews", isAdmin, async (req, res) => {
+    try {
+      const reviews = await storage.getReviewsForAdmin();
+      res.json(reviews);
+    } catch (error) {
+      console.error("Error fetching admin reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews", error: (error as Error).message });
+    }
+  });
+
+  // PUT /api/admin/reviews/:id/approve - Allows an admin to approve a pending review.
+  app.put("/api/admin/reviews/:id/approve", isAdmin, async (req, res) => {
+    try {
+      const reviewId = Number(req.params.id);
+      const updatedReview = await storage.updateReviewStatus(reviewId, 'approved');
+
+      if (!updatedReview) {
+        return res.status(404).json({ message: "Review not found" });
+      }
+
+      res.json({ message: "Review approved successfully." });
+    } catch (error) {
+      console.error("Error approving review:", error);
+      res.status(500).json({ message: "Failed to approve review", error: (error as Error).message });
+    }
+  });
+
+  // DELETE /api/admin/reviews/:id - Allows an admin to delete a review.
+  app.delete("/api/admin/reviews/:id", isAdmin, async (req, res) => {
+    try {
+      const reviewId = Number(req.params.id);
+      const result = await storage.deleteReview(reviewId);
+
+      if (!result) {
+        return res.status(404).json({ message: "Review not found or already deleted." });
+      }
+
+      res.json({ message: "Review deleted successfully." });
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      res.status(500).json({ message: "Failed to delete review", error: (error as Error).message });
+    }
+  });
 
   // User routes for admin
   app.get("/api/users", isAdmin, async (req, res) => {

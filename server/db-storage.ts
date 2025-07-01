@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { eq, and, SQL, sql } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm'; // Added 'desc'
 import {
   users, User, InsertUser,
   categories, Category, InsertCategory,
@@ -10,6 +10,7 @@ import {
   cartItems, CartItem, InsertCartItem,
   watchlistItems, WatchlistItem, InsertWatchlistItem,
   banners, Banner, InsertBanner,
+  reviews, InsertReview, AdminReview, // Added review imports
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
   ProductVariant
 } from '@shared/schema';
@@ -18,8 +19,6 @@ import { IStorage } from './storage';
 // if (!process.env.DATABASE_URL) {
 //   throw new Error('DATABASE_URL environment variable is required');
 // }
-
-
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
@@ -196,15 +195,12 @@ export class DbStorage implements IStorage {
 
   async addToCart(itemData: InsertCartItem): Promise<CartItem> {
     const { variantInfo, ...rest } = itemData;
-    console.log("addToCart received itemData:", itemData);
-
-    // Determine the variant comparison based on whether variantInfo is provided
+    
     const variantComparisonCondition = 
       variantInfo !== undefined && variantInfo !== null
         ? sql`${cartItems.variantInfo}::jsonb = ${JSON.stringify(variantInfo)}::jsonb`
         : sql`${cartItems.variantInfo} IS NULL`;
 
-    // Check if item already exists in cart
     const existingItem = await db.select()
       .from(cartItems)
       .where(and(
@@ -213,10 +209,7 @@ export class DbStorage implements IStorage {
         variantComparisonCondition
       ));
 
-    console.log("Existing item check result:", existingItem);
-
     if (existingItem.length > 0) {
-      // Update quantity of existing item
       const updatedQuantity = existingItem[0].quantity + itemData.quantity;
       const result = await db.update(cartItems)
         .set({ quantity: updatedQuantity })
@@ -322,6 +315,7 @@ export class DbStorage implements IStorage {
     const orderList = await db.select().from(orders);
     const orderItemList = await db.select().from(orderItems);
     const productList = await db.select().from(products);
+    const userList = await db.select().from(users);
     
     return orderList.map(order => ({
       ...order,
@@ -330,7 +324,8 @@ export class DbStorage implements IStorage {
         .map(item => ({
           ...item,
           product: productList.find(p => p.id === item.productId)!
-        }))
+        })),
+      user: userList.find(u => u.id === order.userId)
     }));
   }
 
@@ -365,13 +360,15 @@ export class DbStorage implements IStorage {
     
     const orderItemList = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
     const productList = await db.select().from(products);
+    const user = await this.getUser(order.userId);
     
     return {
       ...order,
       items: orderItemList.map(item => ({
         ...item,
         product: productList.find(p => p.id === item.productId)!
-      }))
+      })),
+      user
     };
   }
 
@@ -399,4 +396,52 @@ export class DbStorage implements IStorage {
       .returning();
     return result[0];
   }
-} 
+
+  // --- REVIEW OPERATIONS ---
+
+  async createReview(data: InsertReview): Promise<any> {
+    const [newReview] = await db.insert(reviews).values(data).returning();
+    return newReview;
+  }
+
+  async getReviewsForAdmin(): Promise<AdminReview[]> {
+    const result = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        status: reviews.status,
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+        product: {
+          id: products.id,
+          name: products.name,
+        },
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .leftJoin(products, eq(reviews.productId, products.id))
+      .orderBy(desc(reviews.createdAt));
+      
+    // The type assertion is safe because of the select statement structure.
+    return result as unknown as AdminReview[];
+  }
+
+  async updateReviewStatus(id: number, status: 'approved' | 'pending'): Promise<any> {
+    const [updatedReview] = await db
+      .update(reviews)
+      .set({ status })
+      .where(eq(reviews.id, id))
+      .returning();
+    return updatedReview;
+  }
+
+  async deleteReview(id: number): Promise<boolean> {
+    const result = await db.delete(reviews).where(eq(reviews.id, id)).returning();
+    return result.length > 0;
+  }
+}

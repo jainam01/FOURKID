@@ -1,4 +1,6 @@
-import { useState } from "react";
+// File: client/src/components/QuickViewModal.tsx
+
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,6 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
   const addToCart = useAddToCart();
   const addToWatchlist = useAddToWatchlist();
 
-  // Group variants by name (e.g., Size, Color)
   const variantGroups = product.variants 
     ? product.variants.reduce<Record<string, string[]>>((acc, variant) => {
         if (!acc[variant.name]) {
@@ -44,71 +45,45 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
       }, {})
     : {};
 
-  const incrementQuantity = () => {
-    setQuantity(prev => Math.min(prev + 1, product.stock));
-  };
-
-  const decrementQuantity = () => {
-    setQuantity(prev => Math.max(prev - 1, 1));
-  };
-
-  const nextImage = () => {
-    setCurrentImageIndex(prev => 
-      prev + 1 >= product.images.length ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex(prev => 
-      prev - 1 < 0 ? product.images.length - 1 : prev - 1
-    );
-  };
+  const incrementQuantity = () => setQuantity(prev => Math.min(prev + 1, product.stock));
+  const decrementQuantity = () => setQuantity(prev => Math.max(prev - 1, 1));
+  const nextImage = () => setCurrentImageIndex(prev => (prev + 1) % product.images.length);
+  const prevImage = () => setCurrentImageIndex(prev => (prev - 1 + product.images.length) % product.images.length);
 
   const handleVariantChange = (name: string, value: string) => {
-    setSelectedVariants(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setSelectedVariants(prev => ({ ...prev, [name]: value }));
   };
 
   const handleAddToCart = () => {
     if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to add items to your cart.",
-        variant: "destructive"
-      });
+      toast({ title: "Login Required", description: "Please log in to add items to your cart.", variant: "destructive" });
       return;
     }
 
-    // Convert selected variants to array format
-    const variantInfo = Object.entries(selectedVariants).length > 0
+    const variantInfo = Object.keys(selectedVariants).length > 0
       ? Object.entries(selectedVariants).map(([name, value]) => ({ name, value }))
-      : null;
-
-    console.log("Adding to cart with variantInfo:", variantInfo); // Debug log
+      : undefined;
 
     addToCart.mutate(
-      {
-        productId: product.id,
-        quantity,
-        variantInfo
-      },
+      { productId: product.id, quantity, variantInfo },
       {
         onSuccess: () => {
           toast({
-            title: "Added to cart",
-            description: `${product.name} has been added to your cart.`
+            className: 'bg-gray-800 text-white border-none font-sans',
+            duration: 3000,
+            description: (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-sm overflow-hidden flex-shrink-0">
+                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                </div>
+                <span className="font-bold">Added to bag</span>
+              </div>
+            )
           });
           onClose();
         },
         onError: (error) => {
-          console.error("Add to cart error:", error); // Debug log
-          toast({
-            title: "Error",
-            description: "Failed to add item to cart. Please try again.",
-            variant: "destructive"
-          });
+          toast({ title: "Error", description: "Failed to add item to cart.", variant: "destructive" });
         }
       }
     );
@@ -116,11 +91,7 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
 
   const handleAddToWatchlist = () => {
     if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to add items to your watchlist.",
-        variant: "destructive"
-      });
+      toast({ title: "Login Required", description: "Please log in to add items to your watchlist.", variant: "destructive" });
       return;
     }
 
@@ -129,73 +100,75 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
       {
         onSuccess: () => {
           toast({
-            title: "Added to watchlist",
-            description: `${product.name} has been added to your watchlist.`
+            className: 'bg-gray-800 text-white border-none font-sans',
+            duration: 3000,
+            description: (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-sm overflow-hidden flex-shrink-0">
+                  <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                </div>
+                <span className="font-bold">Added to wishlist</span>
+              </div>
+            )
           });
         },
-        onError: () => {
-          toast({
-            title: "Error",
-            description: "Failed to add item to watchlist. Please try again.",
-            variant: "destructive"
-          });
+        onError: (error: any) => {
+          if (error?.response?.status === 409 || error?.message?.includes("already in watchlist")) {
+            toast({ title: "Already in Watchlist", description: "This product is already in your watchlist.", variant: "destructive" });
+          } else {
+            toast({ title: "Error", description: "Failed to add item to watchlist.", variant: "destructive" });
+          }
         }
       }
     );
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      setQuantity(1);
+      setCurrentImageIndex(0);
+      
+      const initialVariants: Record<string, string> = {};
+      Object.entries(variantGroups).forEach(([name, values]) => {
+        if (values.length > 0) {
+          initialVariants[name] = values[0];
+        }
+      });
+      setSelectedVariants(initialVariants);
+    }
+  }, [isOpen, product]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Product Image Carousel */}
-          <div className="relative aspect-square">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          
+          <div className="relative aspect-square bg-gray-100">
             <img
               src={product.images[currentImageIndex]}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain" // <-- THE IMAGE SIZING FIX
             />
-            
             {product.images.length > 1 && (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white"
-                  onClick={prevImage}
-                >
+                <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white" onClick={prevImage}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white"
-                  onClick={nextImage}
-                >
+                <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white" onClick={nextImage}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </>
             )}
-            
-            {/* Image thumbnails */}
             {product.images.length > 1 && (
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
                 {product.images.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index === currentImageIndex ? 'bg-primary' : 'bg-gray-300'
-                    }`}
-                    onClick={() => setCurrentImageIndex(index)}
-                    aria-label={`Go to image ${index + 1}`}
-                  />
+                  <button key={index} className={`w-2 h-2 rounded-full transition-colors ${ index === currentImageIndex ? 'bg-primary' : 'bg-gray-400 hover:bg-gray-500' }`} onClick={() => setCurrentImageIndex(index)} />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Product Details */}
-          <div className="p-6">
+          <div className="p-6 flex flex-col">
             <DialogTitle className="text-xl font-bold mb-2">
               {product.name}
             </DialogTitle>
@@ -204,108 +177,50 @@ const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps) => {
               ₹{product.price.toFixed(2)}
             </p>
             
-            <p className="text-gray-600 mb-6 text-sm">
-              SKU: {product.sku}
-            </p>
-            
-            <div className="mb-4">
-              <p className="text-sm font-medium mb-1">Availability:</p>
-              {product.stock > 5 ? (
-                <p className="text-green-600">In Stock</p>
-              ) : product.stock > 0 ? (
-                <p className="text-amber-600">Low Stock (Only {product.stock} left)</p>
-              ) : (
-                <p className="text-red-600">Out of Stock</p>
-              )}
+            {product.description && (
+              <p className="text-gray-700 text-sm line-clamp-3 mb-6">
+                {product.description}
+              </p>
+            )}
+
+            <div className="flex-grow space-y-4">
+              {Object.entries(variantGroups).map(([name, values]) => (
+                <div key={name}>
+                  <p className="text-sm font-medium mb-1">{name}:</p>
+                  <Select value={selectedVariants[name] || ""} onValueChange={(value) => handleVariantChange(name, value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={`Select ${name}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {values.map((value) => (
+                        <SelectItem key={value} value={value}>{value}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
             </div>
             
-            {/* Product description - truncated for quick view */}
-            {product.description && (
-              <div className="mb-6">
-                <p className="text-gray-700 text-sm line-clamp-3">
-                  {product.description}
-                </p>
-              </div>
-            )}
-            
-            {/* Variant Selectors */}
-            {Object.entries(variantGroups).length > 0 && (
-              <div className="space-y-4 mb-6">
-                {Object.entries(variantGroups).map(([name, values]) => (
-                  <div key={name}>
-                    <p className="text-sm font-medium mb-1">{name}:</p>
-                    <Select
-                      value={selectedVariants[name] || ""}
-                      onValueChange={(value) => handleVariantChange(name, value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={`Select ${name}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {values.map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Quantity Selector */}
-            <div className="flex items-center mb-6">
+            <div className="flex items-center my-6">
               <p className="text-sm font-medium mr-4">Quantity:</p>
               <div className="flex items-center border rounded">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={decrementQuantity}
-                  disabled={quantity <= 1}
-                >
-                  -
-                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={decrementQuantity} disabled={quantity <= 1}>-</Button>
                 <span className="w-10 text-center">{quantity}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={incrementQuantity}
-                  disabled={quantity >= product.stock}
-                >
-                  +
-                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={incrementQuantity} disabled={quantity >= product.stock}>+</Button>
               </div>
             </div>
             
-            {/* Action Buttons */}
             <div className="flex flex-col space-y-3">
-              <Button 
-                className="w-full" 
-                onClick={handleAddToCart}
-                disabled={product.stock === 0}
-              >
+              <Button className="w-full bg-pink-500 hover:bg-pink-600" onClick={handleAddToCart} disabled={product.stock === 0}>
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Add to Cart
               </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full" 
-                onClick={handleAddToWatchlist}
-              >
+              <Button variant="outline" className="w-full" onClick={handleAddToWatchlist}>
                 <Heart className="mr-2 h-4 w-4" />
                 Add to Watchlist
               </Button>
-              
-              <Button 
-                variant="link" 
-                className="w-full" 
-                asChild
-              >
-                <Link href={`/product/${product.id}`}>
+              <Button variant="link" className="w-full" asChild>
+                <Link href={`/product/${product.id}`} onClick={onClose}>
                   View Full Details
                 </Link>
               </Button>

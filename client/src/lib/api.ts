@@ -1,5 +1,8 @@
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useQuery, useMutation, UseQueryOptions } from "@tanstack/react-query";
+// File: client/src/lib/api.ts
+
+// The top-level queryClient is removed as we will use the hook instead.
+import { apiRequest } from "@/lib/queryClient"; 
+import { useQuery, useMutation, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
 import { 
   Product, Category, InsertProduct, InsertCategory, 
   CartItem, WatchlistItem,
@@ -38,6 +41,7 @@ export function useCategoryBySlug(slug: string) {
 }
 
 export function useCreateCategory() {
+  const queryClient = useQueryClient();
   return useMutation<Category, Error, InsertCategory>({
     mutationFn: async (categoryData) => {
       const res = await apiRequest("POST", "/api/categories", categoryData);
@@ -48,6 +52,7 @@ export function useCreateCategory() {
 }
 
 export function useUpdateCategory() {
+  const queryClient = useQueryClient();
   return useMutation<Category, Error, { id: number; data: Partial<InsertCategory> }>({
     mutationFn: async ({ id, data }) => {
       const res = await apiRequest("PUT", `/api/categories/${id}`, data);
@@ -61,6 +66,7 @@ export function useUpdateCategory() {
 }
 
 export function useDeleteCategory() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (id) => {
       const res = await apiRequest("DELETE", `/api/categories/${id}`);
@@ -105,6 +111,7 @@ export function useProductsByCategorySlug(slug: string) {
 }
 
 export function useCreateProduct() {
+  const queryClient = useQueryClient();
   return useMutation<Product, Error, InsertProduct>({
     mutationFn: async (productData) => {
       const res = await apiRequest("POST", "/api/products", productData);
@@ -115,6 +122,7 @@ export function useCreateProduct() {
 }
 
 export function useUpdateProduct() {
+  const queryClient = useQueryClient();
   return useMutation<Product, Error, { id: number; data: Partial<InsertProduct> }>({
     mutationFn: async ({ id, data }) => {
       const res = await apiRequest("PUT", `/api/products/${id}`, data);
@@ -128,6 +136,7 @@ export function useUpdateProduct() {
 }
 
 export function useDeleteProduct() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (id) => {
       const res = await apiRequest("DELETE", `/api/products/${id}`);
@@ -149,6 +158,7 @@ export function useCart() {
 }
 
 export function useAddToCart() {
+  const queryClient = useQueryClient();
   return useMutation<CartItem, Error, AddToCartVariables>({
     mutationFn: async (cartItemData) => {
       const res = await apiRequest("POST", "/api/cart", cartItemData);
@@ -158,37 +168,48 @@ export function useAddToCart() {
       }
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    }
   });
 }
 
 export function useUpdateCartItem() {
+  const queryClient = useQueryClient();
   return useMutation<CartItem, Error, { id: number; quantity: number }>({
     mutationFn: async ({ id, quantity }) => {
       const res = await apiRequest("PUT", `/api/cart/${id}`, { quantity });
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    }
   });
 }
 
 export function useRemoveFromCart() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (id) => {
       const res = await apiRequest("DELETE", `/api/cart/${id}`);
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    }
   });
 }
 
 export function useClearCart() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, void>({
     mutationFn: async () => {
       const res = await apiRequest("DELETE", "/api/cart");
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/cart'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
+    }
   });
 }
 
@@ -200,6 +221,7 @@ interface AddReviewPayload {
 }
 
 export function useAddReview() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, AddReviewPayload>({
     mutationFn: async (payload: AddReviewPayload) => {
       const res = await apiRequest("POST", "/api/reviews", payload);
@@ -209,8 +231,8 @@ export function useAddReview() {
       }
       return await res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', variables.productId] });
     }
   });
 }
@@ -219,13 +241,6 @@ export function useAddReview() {
 export function useAdminGetAllReviews() {
   return useQuery<AdminReview[]>({
     queryKey: ['/api/admin/reviews'],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/admin/reviews");
-      if (!res.ok) {
-        throw new Error('Failed to fetch reviews');
-      }
-      return await res.json();
-    },
   });
 }
 
@@ -262,6 +277,7 @@ export function useWatchlist() {
 }
 
 export function useAddToWatchlist() {
+  const queryClient = useQueryClient();
   return useMutation<WatchlistItem, Error, AddToWatchlistVariables>({
     mutationFn: async (watchlistItemData) => {
       const res = await apiRequest("POST", "/api/watchlist", watchlistItemData);
@@ -271,17 +287,22 @@ export function useAddToWatchlist() {
       }
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+    }
   });
 }
 
 export function useRemoveFromWatchlist() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (id) => {
       const res = await apiRequest("DELETE", `/api/watchlist/${id}`);
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+    }
   });
 }
 
@@ -298,6 +319,7 @@ export function useOrder(id: number) {
 }
 
 export function useCreateOrder() {
+  const queryClient = useQueryClient();
   return useMutation<Order, Error, { items: InsertOrderItem[]; address: string; total: number }>({
     mutationFn: async (orderData) => {
       const res = await apiRequest("POST", "/api/orders", orderData);
@@ -311,6 +333,7 @@ export function useCreateOrder() {
 }
 
 export function useUpdateOrderStatus() {
+  const queryClient = useQueryClient();
   return useMutation<Order, Error, { id: number; status: string }>({
     mutationFn: async ({ id, status }) => {
       const res = await apiRequest("PUT", `/api/orders/${id}/status`, { status });
@@ -337,16 +360,20 @@ export function useBanner(id: number) {
 }
 
 export function useCreateBanner() {
+  const queryClient = useQueryClient();
   return useMutation<Banner, Error, InsertBanner>({
     mutationFn: async (bannerData) => {
       const res = await apiRequest("POST", "/api/banners", bannerData);
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/banners'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/banners'] });
+    }
   });
 }
 
 export function useUpdateBanner() {
+  const queryClient = useQueryClient();
   return useMutation<Banner, Error, { id: number; data: Partial<InsertBanner> }>({
     mutationFn: async ({ id, data }) => {
       const res = await apiRequest("PUT", `/api/banners/${id}`, data);
@@ -360,11 +387,14 @@ export function useUpdateBanner() {
 }
 
 export function useDeleteBanner() {
+  const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (id) => {
       const res = await apiRequest("DELETE", `/api/banners/${id}`);
       return await res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['/api/banners'] }); }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/banners'] });
+    }
   });
 }
