@@ -53,7 +53,7 @@ const Login = () => {
         <title>Login - Fourkids Wholesale</title>
         <meta name="description" content="Login to your Fourkids wholesale account to access exclusive products and place orders." />
       </Helmet>
-      
+
       <div className="container mx-auto py-16 px-4">
         <div className="max-w-md mx-auto">
           <Card>
@@ -63,7 +63,7 @@ const Login = () => {
                 Enter your email and password to access your wholesale account
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -74,18 +74,18 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="you@example.com" 
-                            type="email" 
+                          <Input
+                            placeholder="you@example.com"
+                            type="email"
                             autoComplete="email"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="password"
@@ -93,42 +93,42 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="••••••••" 
-                            type="password" 
+                          <Input
+                            placeholder="••••••••"
+                            type="password"
                             autoComplete="current-password"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
+
+                  <Button
+                    type="submit"
+                    className="w-full"
                     disabled={login.isPending}
                   >
                     {login.isPending ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </Form>
-              
+
               <div className="mt-4 text-center">
                 <Link href="/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
             </CardContent>
-            
+
             <CardFooter className="flex flex-col space-y-4">
               <div className="text-center w-full">
                 <span className="text-sm text-muted-foreground">
                   Don't have an account yet?{" "}
                 </span>
                 <Link href="/register" className="text-sm text-primary hover:underline">
-                  Register as a wholesale buyer
+                  Sign up                
                 </Link>
               </div>
             </CardFooter>

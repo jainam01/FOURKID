@@ -1,4 +1,3 @@
-// File: client/src/pages/ProductDetail.tsx
 
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
