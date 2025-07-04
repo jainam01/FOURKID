@@ -65,10 +65,10 @@ const Support = () => {
   };
 
   const faqItems = [
-    { question: "How do I track my order?", answer: "You can track your order by logging into your account and visiting the 'Order History' section. Alternatively, use the tracking number provided in your shipping confirmation email." },
+    { question: "How do I track my order?", answer: "You can track your order by logging into your account and visiting the 'Order History' section." },
     { question: "What is your return policy?", answer: "We offer a 30-day return policy. Items must be unworn, unwashed, and with all original tags attached. Please visit our Return Portal to initiate a return." },
-    { question: "How do I find the right size for my child?", answer: "We provide a comprehensive size guide for each product category. You can find it on product pages or in the 'Size Guide' section of our website. Measure your child and compare to our charts for the best fit." },
-    { question: "Do you offer wholesale pricing?", answer: "Yes, we offer wholesale pricing for qualified retailers. Please contact our wholesale department at wholesale@fourkids.com for more information." },
+    { question: "How do I find the right size for my child?", answer: "We provide a comprehensive size guide for each product category. You can find it on product pages section of our website. Measure your child and compare to our charts for the best fit." },
+    { question: "Do you offer wholesale pricing?", answer: "Yes, we offer wholesale pricing for qualified retailers. Please contact our wholesale department for more information." },
     { question: "How can I cancel my order?", answer: "If your order hasn't shipped yet, you can cancel it by contacting our customer service team. Once an order has shipped, you'll need to wait for it to arrive and then follow our return process." }
   ];
 
@@ -104,7 +104,7 @@ const Support = () => {
             </div>
             <h3 className="text-lg font-bold mb-2">Email Support</h3>
             <p className="text-gray-600 mb-4 text-sm">Send us an email and we'll respond within 24 hours</p>
-            <a href="mailto:support@fourkids.com" className="text-primary text-sm font-medium">support@fourkids.com</a>
+            <a href="mailto:support@fourkids.com" className="text-primary text-sm font-medium">arihant.8758586464@gmail.com</a>
           </div>
 
           {/* Phone Support */}
@@ -114,7 +114,7 @@ const Support = () => {
             </div>
             <h3 className="text-lg font-bold mb-2">Phone Support</h3>
             <p className="text-gray-600 mb-4 text-sm">Call us directly for immediate assistance</p>
-            <a href="tel:1-800-555-KIDS" className="text-primary text-sm font-medium">1-800-555-KIDS</a>
+            <a href="tel:1-800-555-KIDS" className="text-primary text-sm font-medium">+91 8758586464</a>
           </div>
         </div>
 
@@ -126,15 +126,15 @@ const Support = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full" />
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your name" required className="w-full" />
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="XYZ@example.com" required className="w-full" />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" required className="w-full" />
               </div>
               <div>
                 <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Order #12345" required className="w-full" />
+                <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Enter your order number" required className="w-full" />
               </div>
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>

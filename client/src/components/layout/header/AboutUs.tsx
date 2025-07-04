@@ -46,9 +46,9 @@ const AnimatedSection = ({ children, className, ref, ...props }: { children: Rea
 
 const AboutUs = () => {
   const team = [
-    { name: "Sarah Johnson", role: "Founder & CEO", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800&auto=format&fit=crop", bio: "With 15+ years in children's fashion, Sarah founded FourKids to create durable, stylish clothing for kids." },
-    { name: "Michael Chen", role: "Design Director", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop", bio: "Michael brings his experience from top fashion houses to create comfortable, functional designs." },
-    { name: "Priya Patel", role: "Head of Production", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop", bio: "Priya ensures all FourKids products meet our high standards for quality and ethical manufacturing." },
+    { name: "Manish Kothari", role: "Founder & CEO", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800&auto=format&fit=crop", bio: "With 15+ years in children's fashion, Sarah founded FourKids to create durable, stylish clothing for kids." },
+    { name: "Hitesh Kothari", role: "Design Director", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop", bio: "Michael brings his experience from top fashion houses to create comfortable, functional designs." },
+    { name: "Rahul Kothari", role: "Head of Production", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop", bio: "Priya ensures all FourKids products meet our high standards for quality and ethical manufacturing." },
     { name: "James Wilson", role: "Sustainability Officer", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop", bio: "James leads our initiatives to reduce environmental impact through sustainable practices." }
   ];
 

@@ -147,7 +147,7 @@ const Header = ({ isSearchVisible, setIsSearchVisible }: HeaderProps) => {
         <div className="hidden md:flex items-center space-x-7 text-sm font-semibold">
           <Link href="/support" className="hover:text-primary transition-colors">Support</Link>
           <Link href="/wholesale-program" className="hover:text-primary transition-colors">Wholesale Program</Link>
-          <Link href="/about" className="hover:text-primary transition-colors">About Us</Link>
+          {/* <Link href="/about" className="hover:text-primary transition-colors">About Us</Link> */}
         </div>
       </div>
       
