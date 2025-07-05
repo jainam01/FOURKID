@@ -26,9 +26,9 @@ export const HeaderLayout = ({ children }: HeaderLayoutProps) => {
       </main>
 
       {/* The desktop footer. It is correctly hidden on mobile devices. */}
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block"> */}
         <Footer />
-      </div>
+      {/* </div> */}
 
       {/* --- THE CRITICAL FIX --- */}
       {/* We render BottomNav UNCONDITIONALLY. */}

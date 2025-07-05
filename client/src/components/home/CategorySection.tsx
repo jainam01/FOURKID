@@ -21,7 +21,7 @@ const CategorySection = () => {
     // Skeleton loader for when data is fetching
     return (
       <div className="container mx-auto px-4 my-12">
-        <h2 className="text-2xl font-bold mb-8 text-center">Categories to Bag</h2>
+        <h2 className="text-2xl font-bold mb-8 text-center">Explore Our Collection</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="aspect-square bg-neutral-800 rounded-3xl animate-pulse"></div>
@@ -37,7 +37,7 @@ const CategorySection = () => {
 
   return (
     <div className="container mx-auto px-4 my-12">
-      <h2 className="text-2xl font-bold mb-8 text-center">Categories to Bag</h2>
+      <h2 className="text-3xl font-bold mb-8 text-center">Explore Our Collection</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
         {categories.slice(0, 6).map((category, index) => (
           // The Link now wraps the SpotlightCard to make the whole card clickable
