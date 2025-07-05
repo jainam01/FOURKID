@@ -12,6 +12,7 @@ import { useProducts } from "@/lib/api";
 import { Award, ShieldCheck, ShoppingBag, Truck } from "lucide-react"; // Examples
 import OffersBanner from "@/components/home/offerbanner";
 import Newsletter from "@/components/home/Newsletter";
+import RetailerReviewSection from "@/components/home/RetailerReviewSection";
 
 const Home = () => {
   const { data: productsResponse } = useProducts();
@@ -82,11 +83,14 @@ const Home = () => {
 
 
       <HeroCarousel />
-      <OffersBanner />
       <CategorySection />
+      <OffersBanner />
+    
       <div className="container mx-auto px-4 my-12 md:my-16">
         <ProductGrid products={featuredProducts} title="Featured Products" />
       </div>
+
+      <RetailerReviewSection />
 
       {/* why choose fourkids component */}
       {/* <div className="bg-gray-50 py-12 md:py-16">
@@ -109,8 +113,8 @@ const Home = () => {
         </div>
       </div> */}
 
-
-      <Newsletter />
+{/* 
+      <Newsletter /> */}
 
       {/* become partner */}
       {/* <div className="bg-primary text-white py-12 md:py-16">

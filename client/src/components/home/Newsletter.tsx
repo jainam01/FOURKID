@@ -57,7 +57,6 @@ const Newsletter = () => {
     "Exclusive discounts and promotions",
     "New collection announcements",
     "Seasonal style guides",
-    "Special birthday offers for your child"
   ];
 
   return (
@@ -94,7 +93,7 @@ const Newsletter = () => {
               <div className="bg-white p-6 rounded-xl shadow-sm">
                 <h3 className="font-bold text-xl mb-4">Join Our Community</h3>
                 <p className="text-gray-500 text-sm mb-6">
-                  Get 10% off your first order when you sign up for our newsletter.
+                  {/* Get 10% off your first order when you sign up for our newsletter. */}
                 </p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">

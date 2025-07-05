@@ -1,108 +1,134 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Mail, MessageSquareText, Facebook, InstagramIcon, Youtube, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-// The data structure remains the same, which is efficient.
-const footerSections = [
+// --- Data for Link Columns (Easy to Edit) ---
+const footerLinkSections = [
   {
-    title: "Customer Service",
+    title: "Support",
     links: [
       { name: "Contact Us", href: "/contact" },
-      { name: "Support", href: "/support" },
+      { name: "Privacy Policy", href: "/privacy-policy" },
+      { name: "Refund Policy", href: "/refund-policy" },
+      { name: "Shipping Policy", href: "/shipping-policy" },
+      { name: "Terms Of Service", href: "/terms-of-service" },
+    ],
+  },
+  {
+    title: "Info",
+    links: [
+      { name: "About Us", href: "/about" },
       { name: "Wholesale Program", href: "/wholesale-program" },
       { name: "FAQ", href: "/faq" },
     ],
   },
-  {
-    title: "Information",
-    links: [
-      { name: "About Us", href: "/about" },
-      { name: "Shipping Policy", href: "/shipping-policy" },
-      { name: "Refund Policy", href: "/refund-policy" },
-      { name: "Terms & Conditions", href: "/terms" },
-      { name: "Privacy Policy", href: "/privacy" },
-    ],
-  },
 ];
 
-// --- NEW SOCIAL ICONS COMPONENT (for cleaner code) ---
-const SocialIcons = () => (
-  <div className="flex space-x-4">
-    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-    </a>
-    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
-    </a>
-    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-    </a>
-  </div>
+// --- SVG Component for WhatsApp (as it's not in Lucide) ---
+const WhatsAppIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+  </svg>
+);
+
+// --- Simple Payment Icon Components ---
+const PaymentIcons = () => (
+    <div className="flex items-center justify-center md:justify-end gap-2 flex-wrap">
+      {/* Replace with your actual payment SVGs or images */}
+      <div className="bg-white border border-gray-300 rounded-md px-2 py-1"><img src="https://js.wpenjoy.com/wp-content/uploads/2021/03/visa-logo-gray.png" alt="Visa" className="h-4"/></div>
+      <div className="bg-white border border-gray-300 rounded-md px-2 py-1"><img src="https://js.wpenjoy.com/wp-content/uploads/2021/03/mastercard-logo-gray.png" alt="Mastercard" className="h-4"/></div>
+      <div className="bg-white border border-gray-300 rounded-md px-2 py-1"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="American Express" className="h-4"/></div>
+      <div className="bg-white border border-gray-300 rounded-md px-2 py-1"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/Apple_Pay_logo.svg" alt="Apple Pay" className="h-4"/></div>
+      <div className="bg-white border border-gray-300 rounded-md px-2 py-1"><img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Bitcoin.svg" alt="Bitcoin" className="h-4"/></div>
+    </div>
 );
 
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const toggleSection = (title: string) => {
     setOpenSection(openSection === title ? null : title);
   };
 
-  return (
-    <footer className="bg-slate-50 mt-16 border-t border-slate-200 dark:bg-slate-900 dark:border-slate-800">
-      <div className="container mx-auto px-4 py-12">
-        
-        {/* --- Top Section: About and Contact --- */}
-        {/* On mobile, this will stack. On desktop, it's a grid. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">About Fourkids</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
-              Fourkids is a premium wholesale clothing business for the Indian market, 
-              offering high-quality trendy designs at competitive prices.
-            </p>
-          </div>
-          <div className="md:text-right">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3">Contact</h3>
-            <address className="not-italic text-slate-600 dark:text-slate-400 text-sm">
-              <p className="font-semibold">Fourkid's</p>
-              <p>225, 2th floor, Karnvati platinum - 8</p>
-              <p>Greekanta Ahmedabad - 380007</p>
-              <p className="mt-2">
-                <a href="mailto:arihant.8758586464@gmail.com" className="hover:text-primary break-all">
-                  arihant.8758586464@gmail.com
-                </a>
-              </p>
-            </address>
-          </div>
-        </div>
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/newsletter-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to subscribe.");
+      toast({
+        title: "Success!",
+        description: "You've been subscribed to our newsletter.",
+      });
+      setNewsletterEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to subscribe. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-        {/* --- Middle Section: The Accordion Links (Mobile) / Columns (Desktop) --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-10">
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              {/* This is the tappable card header for mobile */}
+  return (
+    <footer className="bg-[#fbfaf8] text-slate-800 border-t border-slate-200 mt-16">
+      <div className="container mx-auto px-4 pt-16 pb-8">
+        
+        {/* --- Top Grid Section --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 mb-12">
+          
+          {/* Column 1: Brand Info */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-primary">Fourkids</h2> 
+            {/* <p className="text-sm text-slate-600">Also Available on <a href="#" className="font-bold">amazon.com</a></p> */}
+            <address className="not-italic text-sm text-slate-600 space-y-2">
+                <p><span className="font-bold">Address:</span> 225, 2nd floor, Karnvati platinum - 8, Greekanta Ahmedabad - 380007</p>
+            </address>
+             <div className="space-y-2 text-sm">
+                <a href="tel:+918758586464" className="flex items-center gap-2 text-slate-600 hover:text-primary">
+                    <MessageSquareText size={16} /> <span>Text: 8758586464</span>
+                </a>
+                <a href="mailto:arihant.8758586464@gmail.com" className="flex items-center gap-2 text-slate-600 hover:text-primary">
+                    <Mail size={16} /> <span>arihant.8758586464@gmail.com</span>
+                </a>
+             </div>
+          </div>
+          
+          {/* Columns 2 & 3: Link Lists */}
+          {footerLinkSections.map((section) => (
+            <div key={section.title} className="border-b border-slate-200 pb-4 md:border-none md:pb-0">
               <button
-                className="w-full flex justify-between items-center text-left p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 md:bg-transparent md:p-0 md:border-none md:shadow-none"
+                className="w-full flex justify-between items-center text-left md:pointer-events-none"
                 onClick={() => toggleSection(section.title)}
-                aria-expanded={openSection === section.title}
               >
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 md:text-lg">
-                  {section.title}
-                </h3>
-                <ChevronDown 
-                  className={`h-5 w-5 text-slate-500 transition-transform duration-300 md:hidden ${openSection === section.title ? "rotate-180" : ""}`} 
-                />
+                <h3 className="font-bold text-lg mb-4">{section.title}</h3>
+                <ChevronDown className={`h-5 w-5 transition-transform duration-300 md:hidden ${openSection === section.title ? "rotate-180" : ""}`} />
               </button>
-              
-              {/* The list of links */}
-              <ul 
-                className={`pl-4 space-y-3 mt-3 md:mt-4 md:pl-0 md:block ${openSection === section.title ? 'block' : 'hidden'}`}
-              >
+              <ul className={`space-y-3 md:block ${openSection === section.title ? 'block' : 'hidden'}`}>
                 {section.links.map((link) => (
                   <li key={link.name}>
-                    <Link href={link.href} className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm">
+                    <Link href={link.href} className="text-slate-600 hover:text-primary transition-colors text-sm">
                       {link.name}
                     </Link>
                   </li>
@@ -110,16 +136,79 @@ const Footer = () => {
               </ul>
             </div>
           ))}
+
+          {/* Column 4: Follow Us & Newsletter */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-bold text-lg mb-4">Follow Us</h3>
+              <div className="flex space-x-4">
+                <a href="#" className="text-slate-700 hover:text-primary"><Facebook /></a>
+                <a href="#" className="text-slate-700 hover:text-primary"><InstagramIcon /></a>
+                {/* <a href="#" className="text-slate-700 hover:text-primary"><Youtube /></a> */}
+                <a
+                  href="https://wa.me/918758586464"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-700 hover:text-primary"
+                >
+                  <WhatsAppIcon />
+                </a>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg mb-2">Newsletter Sign Up</h3>
+              <p className="text-sm text-slate-600 mb-4">Receive our latest updates about our products and promotions.</p>
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="email" 
+                  placeholder="enter your email address" 
+                  required
+                  value={newsletterEmail}
+                  onChange={e => setNewsletterEmail(e.target.value)}
+                  className="w-full px-4 py-2 text-sm bg-white border border-slate-400 rounded-md focus:ring-2 focus:ring-primary focus:outline-none"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="submit"
+                  className="bg-black text-white font-bold text-sm px-6 py-2 rounded-md hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                >
+                  SUBMIT <Send size={14}/>
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
         
-        {/* --- Bottom Section: Social Icons and Copyright --- */}
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <SocialIcons />
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center md:text-right">
+        {/* --- Recognitions Section (Optional but Recommended for Trust) --- */}
+        {/* <div className="border-t border-slate-200 pt-10 mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+            <div className="text-center md:text-left">
+              <h4 className="font-bold mb-4">We have been a part of</h4>
+              <div className="flex justify-center md:justify-start items-center gap-4 flex-wrap">
+               
+                <img src="https://www.gstatic.com/s/gweb/common/storage/images/icons/material/product/gfs/v2/gfs_48dp.png" alt="Google for Startups" className="h-10"/>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/United_Nations_Trade_and_Development_logo.svg/320px-United_Nations_Trade_and_Development_logo.svg.png" alt="UN Trade" className="h-10"/>
+              </div>
+            </div>
+            <div className="text-center md:text-left">
+              <h4 className="font-bold mb-4">Recognized by Govt of India</h4>
+              <div className="flex justify-center md:justify-start items-center gap-4 flex-wrap">
+               
+                <img src="https://msme.gov.in/sites/default/files/logo-msme.png" alt="MSME India" className="h-10"/>
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e9/Startup_India_logo.svg/320px-Startup_India_logo.svg.png" alt="Startup India" className="h-10"/>
+              </div>
+            </div>
+          </div>
+        </div> */}
+
+        {/* --- Bottom Bar: Copyright & Payment Methods --- */}
+        <div className="border-t border-slate-200 mt-12 pt-8 flex flex-col-reverse md:flex-row justify-between items-center gap-6">
+          <p className="text-sm text-slate-500 text-center">
             © {currentYear} Fourkids. All rights reserved.
           </p>
+          {/* <PaymentIcons /> */}
         </div>
-        
       </div>
     </footer>
   );
