@@ -12,6 +12,7 @@ import { useProducts } from "@/lib/api";
 import { Award, ShieldCheck, ShoppingBag, Truck } from "lucide-react"; // Examples
 import OffersBanner from "@/components/home/offerbanner";
 import Newsletter from "@/components/home/Newsletter";
+// import ShopByAgeSection from '@/components/home/ShopByAgeSection';
 import RetailerReviewSection from "@/components/home/RetailerReviewSection";
 
 const Home = () => {
@@ -85,6 +86,7 @@ const Home = () => {
       <HeroCarousel />
       <CategorySection />
       <OffersBanner />
+      {/* <ShopByAgeSection /> */}
     
       <div className="container mx-auto px-4 my-12 md:my-16">
         <ProductGrid products={featuredProducts} title="Featured Products" />
