@@ -1,29 +1,27 @@
 // src/components/pages/ShippingPolicyPage.tsx
 
 import { Helmet } from "react-helmet-async";
-import { Button } from "@/components/ui/button"; // If you need a CTA button
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // For important notices
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Truck, Clock, MapPin, PackageSearch, Globe, AlertTriangle } from "lucide-react";
+import { Truck, Clock, MapPin, PackageSearch, Globe, AlertTriangle, Video } from "lucide-react";
 
 const ShippingPolicyPage = () => {
-  // Replace with your specific details
+  // --- UPDATE WITH YOUR SPECIFIC BUSINESS DETAILS ---
   const policyDetails = {
-    processingTime: "1-2 business days",
-    standardShippingTimeIndia: "3-7 business days",
-    expressShippingTimeIndia: "1-3 business days (select metro cities)",
-    freeShippingThresholdIndia: 5000, // Example: Free shipping on orders over ₹5000
-    standardShippingRate: 100, // Example: Flat rate for standard shipping
-    trackingLink: "/orders", // Link to user's order history page
-    contactEmail: "shipping@fourkids.in",
-    contactPhone: "+91-XXXX-XXX-XXX"
+    companyName: "Fourkids",
+    contactEmail: "arihant.8758586464@gmail.com",
+    contactPhone: "+91 875858 6464",
+    orderProcessingTime: "3-5 business days", // Time from final payment to dispatch
+    deliveryTimeIndia: "4-10 business days", // Standard estimate for bulk cargo
+    trackingLink: "/account/orders", // Link to user's order history page
+    internationalShipping: true, // Set to true if you ship internationally
   };
 
   return (
     <div className="shipping-policy-page bg-background text-foreground">
       <Helmet>
-        <title>Shipping Policy - FourKids</title>
-        <meta name="description" content="Learn about FourKids' shipping policies, including processing times, delivery estimates, shipping rates, and tracking information for wholesale orders." />
+        <title>Wholesale Shipping Policy - {policyDetails.companyName}</title>
+        <meta name="description" content={`Learn about ${policyDetails.companyName}'s shipping policies for wholesale orders, including processing, delivery estimates, rates, and tracking.`} />
       </Helmet>
 
       {/* Hero Section */}
@@ -31,10 +29,10 @@ const ShippingPolicyPage = () => {
         <div className="container mx-auto px-4 text-center">
           <Truck className="h-16 w-16 text-primary mx-auto mb-6" strokeWidth={1.5} />
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-            Shipping Policy
+            Wholesale Shipping Policy
           </h1>
           <p className="mt-2 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Understanding how we get your FourKids orders to you, quickly and reliably.
+            Our process for getting your wholesale orders to you, reliably and efficiently.
           </p>
         </div>
       </section>
@@ -44,48 +42,32 @@ const ShippingPolicyPage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto space-y-10">
 
-            {/* Introduction */}
             <div className="prose prose-lg max-w-none dark:prose-invert">
-              <p>
-                At FourKids, we are committed to delivering your wholesale orders efficiently and transparently. This policy outlines our shipping procedures, delivery timelines, costs, and other related information to ensure a smooth experience for our valued partners.
-              </p>
+              <p>At {policyDetails.companyName}, we are dedicated to ensuring a transparent and efficient shipping process for our retail partners. This policy outlines our procedures for order processing, shipping costs, and delivery for bulk wholesale orders.</p>
             </div>
             <Separator />
 
             {/* Order Processing Time */}
             <div>
               <h2 className="text-2xl font-semibold mb-3 flex items-center">
-                <Clock className="h-6 w-6 mr-3 text-primary" /> Order Processing Time
+                <Clock className="h-6 w-6 mr-3 text-primary" /> Order Processing & Dispatch
               </h2>
-              <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  All wholesale orders are processed within <strong>{policyDetails.processingTime}</strong> after receiving order confirmation and payment realization. Orders are not typically processed or shipped on weekends or public holidays.
-                </p>
-                <p>
-                  During peak seasons or promotional periods, processing times may be slightly longer. We will notify you if there are significant delays in processing your order.
-                </p>
+              <div className="prose max-w-none dark:prose-invert space-y-3">
+                <p>Wholesale orders are dispatched within <strong>{policyDetails.orderProcessingTime}</strong> after the final payment has been received and confirmed.</p>
+                <p>Our process is as follows: Order Confirmation → Advance Payment → Procurement & Quality Check → Final Invoice (including shipping & GST) → Final Payment → Dispatch.</p>
+                <p>Please note that orders are not processed or shipped on weekends or public holidays. During peak seasons, dispatch times may extend slightly, and we will communicate any significant delays.</p>
               </div>
             </div>
             <Separator />
 
-            {/* Shipping Methods & Delivery Times (India) */}
+            {/* Shipping within India */}
             <div>
               <h2 className="text-2xl font-semibold mb-3 flex items-center">
                 <MapPin className="h-6 w-6 mr-3 text-primary" /> Shipping within India
               </h2>
               <div className="prose max-w-none dark:prose-invert space-y-4">
-                <p>We offer the following shipping options for deliveries within India:</p>
-                <ul>
-                  <li>
-                    <strong>Standard Shipping:</strong> Estimated delivery within <strong>{policyDetails.standardShippingTimeIndia}</strong>.
-                  </li>
-                  <li>
-                    <strong>Express Shipping:</strong> Estimated delivery within <strong>{policyDetails.expressShippingTimeIndia}</strong> (available for select PIN codes, additional charges apply).
-                  </li>
-                </ul>
-                <p>
-                  Delivery times are estimates and commence from the date of shipping, rather than the date of order. Actual delivery times may vary due to carrier shipping practices, delivery location, method of delivery, and the items ordered.
-                </p>
+                <p>We partner with trusted national carriers to deliver your orders across India. The estimated delivery timeline is typically <strong>{policyDetails.deliveryTimeIndia}</strong> from the date of dispatch.</p>
+                <p>Delivery times are estimates and can vary based on your location, carrier delays, and unforeseen circumstances. We appreciate your patience with bulk consignments.</p>
               </div>
             </div>
             <Separator />
@@ -95,23 +77,10 @@ const ShippingPolicyPage = () => {
               <h2 className="text-2xl font-semibold mb-3 flex items-center">
                 <PackageSearch className="h-6 w-6 mr-3 text-primary" /> Shipping Rates & Costs
               </h2>
-              <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  Shipping charges for your order will be calculated and displayed at checkout.
-                </p>
-                <p>
-                  We offer <strong>free standard shipping</strong> on all orders within India exceeding a total value of <strong>₹{policyDetails.freeShippingThresholdIndia.toLocaleString('en-IN')}</strong>.
-                </p>
-                <p>
-                  For orders below this threshold, a standard shipping fee of ₹{policyDetails.standardShippingRate} may apply. Express shipping rates are calculated based on order weight and destination.
-                </p>
-                <Alert className="mt-4">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Note on Heavy/Bulky Items</AlertTitle>
-                  <AlertDescription>
-                    Additional shipping charges may apply for exceptionally large or heavy orders. We will contact you to confirm any additional charges before processing such orders.
-                  </AlertDescription>
-                </Alert>
+              <div className="prose max-w-none dark:prose-invert space-y-3">
+                <p>Shipping charges are not fixed and are calculated based on the final **volumetric weight** and dimensions of your packed order, as well as the delivery destination.</p>
+                <p>The final shipping cost, along with applicable GST, will be included in your final invoice before dispatch. We strive to provide the most economical and reliable shipping rates available.</p>
+                <p>Retailers who wish to arrange their own shipping or use their preferred transport service may contact us to coordinate a pickup from our warehouse.</p>
               </div>
             </div>
             <Separator />
@@ -122,32 +91,21 @@ const ShippingPolicyPage = () => {
                 <Truck className="h-6 w-6 mr-3 text-primary" /> Shipment Tracking
               </h2>
               <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  Once your order has shipped, you will receive a shipment confirmation email containing your tracking number(s). The tracking number will be active within 24 hours.
-                </p>
-                <p>
-                  You can track your order status through your account dashboard on our website at <a href={policyDetails.trackingLink} className="text-primary hover:underline">My Orders</a> or directly on the carrier's website.
-                </p>
+                <p>Once your order is dispatched, you will receive a shipment confirmation via Email or WhatsApp containing the tracking number (AWB) and carrier details. The tracking information typically becomes active within 24 hours.</p>
+                <p>You can track your order through your account dashboard on our website or directly on the carrier's portal.</p>
               </div>
             </div>
             <Separator />
             
-            {/* International Shipping (Conditional) */}
-            {true && ( // Set this to true if you offer international shipping
+            {/* International Shipping */}
+            {policyDetails.internationalShipping && (
               <div>
                 <h2 className="text-2xl font-semibold mb-3 flex items-center">
                   <Globe className="h-6 w-6 mr-3 text-primary" /> International Shipping
                 </h2>
-                <div className="prose max-w-none dark:prose-invert">
-                  <p>
-                    Yes, we ship to select international destinations. International shipping costs are calculated based on the destination, weight, and dimensions of your order.
-                  </p>
-                  <p>
-                    <strong>Customs, Duties, and Taxes:</strong> All international orders may be subject to import duties, taxes, and brokerage fees levied by the destination country. These charges are the responsibility of the recipient. FourKids is not responsible for these charges, and they are not included in the item price or shipping cost. Please check with your country's customs office to determine what these additional costs will be prior to placing your order.
-                  </p>
-                  <p>
-                    International delivery times vary significantly by destination.
-                  </p>
+                <div className="prose max-w-none dark:prose-invert space-y-3">
+                  <p>We offer international shipping for our wholesale partners. Costs are calculated based on the destination country, and the weight and volume of the shipment. We can provide quotes for both Air and Sea freight.</p>
+                  <p><strong>Important:</strong> All customs duties, import taxes, brokerage fees, and any other charges levied by the destination country are the **sole responsibility of the recipient (the retailer)**. These charges are not included in our invoice.</p>
                 </div>
               </div>
             )}
@@ -156,29 +114,18 @@ const ShippingPolicyPage = () => {
             {/* Damaged or Lost Packages */}
             <div>
               <h2 className="text-2xl font-semibold mb-3 flex items-center">
-                <AlertTriangle className="h-6 w-6 mr-3 text-destructive" /> Damaged or Lost Packages
+                <AlertTriangle className="h-6 w-6 mr-3 text-destructive" /> Damaged, Lost, or Missing Items
               </h2>
-              <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  FourKids is not liable for any products damaged or lost during shipping once they have been handed over to the carrier. If you received your order damaged, please contact the shipment carrier directly to file a claim.
-                </p>
-                <p>
-                  Please save all packaging materials and damaged goods before filing a claim. We recommend taking photographs of the damaged package and items as evidence.
-                </p>
-                <p>
-                  While we are not directly responsible for carrier-related issues, please also inform us at <a href={`mailto:${policyDetails.contactEmail}`} className="text-primary hover:underline">{policyDetails.contactEmail}</a>, and we will do our best to assist you in the claim process.
-                </p>
-              </div>
-            </div>
-            <Separator />
-
-            {/* Policy Updates */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-3">Policy Updates</h2>
-              <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  FourKids reserves the right to update this Shipping Policy at any time. Any changes will be effective immediately upon posting the revised policy on our website. We encourage you to periodically review this page for the latest information on our shipping practices.
-                </p>
+              <div className="prose max-w-none dark:prose-invert space-y-3">
+                <p>{policyDetails.companyName} is not liable for products that are damaged or lost by the carrier after they have left our facility. Liability is transferred to the shipping carrier upon dispatch.</p>
+                <Alert variant="destructive" className="mt-4">
+                  <Video className="h-4 w-4" />
+                  <AlertTitle>Unboxing Video Required for Claims</AlertTitle>
+                  <AlertDescription>
+                    To file any claim for damaged goods or missing items, you **MUST** provide a clear, unedited, and continuous unboxing video of the sealed package. The video must clearly show the shipping label and the condition of the items as they are being opened. Claims without a valid unboxing video will not be entertained.
+                  </AlertDescription>
+                </Alert>
+                <p>If you receive a damaged shipment, please contact the carrier to file a claim. Please also notify us at <a href={`mailto:${policyDetails.contactEmail}`} className="text-primary hover:underline">{policyDetails.contactEmail}</a>, and we will provide you with the necessary documentation to support your claim with the carrier.</p>
               </div>
             </div>
             <Separator />
@@ -187,12 +134,10 @@ const ShippingPolicyPage = () => {
             <div>
               <h2 className="text-2xl font-semibold mb-3">Questions About Shipping?</h2>
               <div className="prose max-w-none dark:prose-invert">
-                <p>
-                  If you have any questions or concerns regarding our Shipping Policy or your order's shipment, please contact us:
-                </p>
+                <p>For any inquiries regarding our shipping procedures or your order's shipment, please contact us:</p>
                 <ul>
                   <li><strong>Email:</strong> <a href={`mailto:${policyDetails.contactEmail}`} className="text-primary hover:underline">{policyDetails.contactEmail}</a></li>
-                  <li><strong>Phone:</strong> <a href={`tel:${policyDetails.contactPhone.replace(/\s|-/g, "")}`} className="text-primary hover:underline">{policyDetails.contactPhone}</a></li>
+                  <li><strong>Phone/WhatsApp:</strong> <a href={`tel:${policyDetails.contactPhone.replace(/\s|-/g, "")}`} className="text-primary hover:underline">{policyDetails.contactPhone}</a></li>
                 </ul>
               </div>
             </div>

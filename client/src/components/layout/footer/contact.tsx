@@ -15,9 +15,9 @@ const ContactUs = () => {
 
   // Replace with your actual contact details
   const contactDetails = {
-    email: "support@fourkids.in", // <<--- YOUR SUPPORT EMAIL
-    phone: "+91-XXXX-XXX-XXX",    // <<--- YOUR SUPPORT PHONE NUMBER
-    address: "123 Kids Fashion Lane, Apparel City, AC 12345, India", // <<--- YOUR ADDRESS (Optional)
+    email: "arihant.8758586464@gmail.com", // <<--- YOUR SUPPORT EMAIL
+    phone: "+91 8758586464",    // <<--- YOUR SUPPORT PHONE NUMBER
+    address: "225, 2nd floor, Karnvati platinum - 8, Greekanta Ahmedabad - 380007", // <<--- YOUR ADDRESS (Optional)
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -160,7 +160,7 @@ const ContactUs = () => {
               <div className="pt-6 border-t border-border">
                  <h3 className="text-xl font-medium mb-3 text-foreground">Business Hours</h3>
                  <p className="text-muted-foreground">Monday - Friday: 9:00 AM - 6:00 PM (IST)</p>
-                 <p className="text-muted-foreground">Saturday: 10:00 AM - 3:00 PM (IST)</p>
+                 <p className="text-muted-foreground">Saturday: 10:00 AM - 6:00 PM (IST)</p>
                  <p className="text-muted-foreground">Sunday: Closed</p>
               </div>
             </div>
@@ -175,11 +175,11 @@ const ContactUs = () => {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1.5">Full Name <span className="text-destructive">*</span></label>
-                      <Input id="name" name="name" type="text" placeholder="John Doe" required />
+                      <Input id="name" name="name" type="text" placeholder="Enter your name" required />
                     </div>
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">Email Address <span className="text-destructive">*</span></label>
-                      <Input id="email" name="email" type="email" placeholder="you@example.com" required />
+                      <Input id="email" name="email" type="email" placeholder="Enter your email" required />
                     </div>
                     <div>
                       <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-1.5">Subject <span className="text-destructive">*</span></label>
@@ -209,7 +209,7 @@ const ContactUs = () => {
             <div className="aspect-video w-full max-w-4xl mx-auto rounded-lg overflow-hidden border border-border shadow-lg">
               {/* Replace with your Google Maps embed iframe or an image of a map */}
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d30000!2d77.000000!3d20.000000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjDCsDAwJzAwLjAiTiA3N8KwMDAnMDAuMCJF!5e0!3m2!1sen!2sin!4vYOUR_MAP_EMBED_TIMESTAMP" // <<--- REPLACE THIS SRC
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d229.49209377376627!2d72.58432385476715!3d23.028416461208128!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e844f451ccb19%3A0xbe85292cb92f097e!2sPlatinum%20Karnavati%20K9!5e0!3m2!1sen!2sin!4v1751804308535!5m2!1sen!2sin" // <<--- REPLACE THIS SRC
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

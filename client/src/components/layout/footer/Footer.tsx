@@ -9,10 +9,10 @@ const footerLinkSections = [
     title: "Support",
     links: [
       { name: "Contact Us", href: "/contact" },
-      { name: "Privacy Policy", href: "/privacy-policy" },
+      { name: "Privacy Policy", href: "/privacy" },
       { name: "Refund Policy", href: "/refund-policy" },
       { name: "Shipping Policy", href: "/shipping-policy" },
-      { name: "Terms Of Service", href: "/terms-of-service" },
+      { name: "Terms Of Service", href: "/terms" },
     ],
   },
   {

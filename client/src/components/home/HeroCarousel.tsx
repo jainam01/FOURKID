@@ -1,35 +1,48 @@
-import { useState, useEffect } from "react";
+// src/components/HeroCarousel.tsx
+
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useBanners } from "@/lib/api";
+import useEmblaCarousel from 'embla-carousel-react'; 
 
 const HeroCarousel = () => {
   const { data: banners = [], isLoading } = useBanners("hero");
-  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Auto-rotate slides
+  // --- 2. Setup Embla Carousel ---
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // --- 3. Update navigation functions to use the Embla API ---
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback((index: number) => emblaApi && emblaApi.scrollTo(index), [emblaApi]);
+
+  // --- Update selected dot on scroll/swipe ---
   useEffect(() => {
-    if (banners.length <= 1) return;
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+    };
+    emblaApi.on('select', onSelect);
+    onSelect(); // Set initial state
+    return () => { emblaApi.off('select', onSelect) };
+  }, [emblaApi]);
 
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 5000);
+  // --- Auto-play ---
+  useEffect(() => {
+    if (!emblaApi) return;
+    const autoplay = setInterval(() => {
+      emblaApi.scrollNext();
+    }, 10000); // 5 seconds
+    return () => clearInterval(autoplay);
+  }, [emblaApi]);
 
-    return () => clearInterval(interval);
-  }, [banners.length]);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % banners.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
-  };
 
   if (isLoading) {
     return (
-      <div className="w-full h-[80vh] bg-gray-100 animate-pulse flex items-center justify-center">
+      <div className="w-full h-[550px] lg:h-[600px] bg-gray-100 animate-pulse flex items-center justify-center">
         <p className="text-gray-400">Loading banner...</p>
       </div>
     );
@@ -37,43 +50,33 @@ const HeroCarousel = () => {
 
   if (banners.length === 0) {
     return (
-      <div className="w-full h-[80vh] bg-gray-100 flex items-center justify-center">
+      <div className="w-full h-[550px] lg:h-[600px] bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Welcome to Fourkids</h2>
           <p className="text-gray-600 mb-6">Premium wholesale clothing for the Indian market</p>
-          <Button asChild>
-            <Link href="/category/capri">Shop Now</Link>
-          </Button>
+          <Button asChild><Link href="/shop">Shop Now</Link></Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-[80vh] sm:h-[100vh] overflow-hidden">
-      {/* Slides */}
-      <div className="relative h-full">
-        {banners.map((banner, index) => (
-          <div
-            key={banner.id}
-            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-              index === currentSlide ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-            style={{ zIndex: index === currentSlide ? 10 : 0 }}
-          >
-            {/* Full Background Image */}
+    // --- CHANGE: Controlled, responsive height ---
+    <div className="relative w-full h-[550px] lg:h-[600px] overflow-hidden" ref={emblaRef}>
+      {/* --- 4. New structure for Embla --- */}
+      <div className="flex h-full">
+        {banners.map((banner) => (
+          // Each slide is now a flex item
+          <div key={banner.id} className="relative flex-shrink-0 flex-grow-0 w-full h-full">
             <img
-              loading="lazy"
               src={banner.image}
               alt={banner.title}
               className="w-full h-full object-cover object-center"
             />
-
-            {/* Overlay with Text */}
-            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center">
-              <div className="container mx-auto px-4">
-                <div className="max-w-xl">
-                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center">
+              <div className="container mx-auto px-6 md:px-12 text-center md:text-left">
+                <div className="max-w-lg md:max-w-xl mx-auto md:mx-0">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
                     {banner.title}
                   </h2>
                   {banner.description && (
@@ -82,7 +85,7 @@ const HeroCarousel = () => {
                     </p>
                   )}
                   <Button size="lg" asChild>
-                    <Link href={banner.link || "/category/capri"}>SHOP NOW</Link>
+                    <Link href={banner.link || "/shop"}>SHOP NOW</Link>
                   </Button>
                 </div>
               </div>
@@ -91,41 +94,37 @@ const HeroCarousel = () => {
         ))}
       </div>
 
-      {/* Arrows */}
+      {/* --- CHANGE: Arrows are now hidden on mobile --- */}
       {banners.length > 1 && (
         <>
-          <Button
+          <button
             aria-label="Previous Slide"
-            variant="ghost"
-            size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 text-gray-800 rounded-full h-10 w-10"
-            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/60 text-white rounded-full h-12 w-12 hidden md:inline-flex items-center justify-center transition-colors"
+            onClick={scrollPrev}
           >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button
+            <ChevronLeft className="h-7 w-7" />
+          </button>
+          <button
             aria-label="Next Slide"
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 text-gray-800 rounded-full h-10 w-10"
-            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/60 text-white rounded-full h-12 w-12 hidden md:inline-flex items-center justify-center transition-colors"
+            onClick={scrollNext}
           >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+            <ChevronRight className="h-7 w-7" />
+          </button>
         </>
       )}
 
-      {/* Dots */}
+      {/* Dots (now use the Embla API) */}
       {banners.length > 1 && (
-        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
+        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center space-x-3">
           {banners.map((_, index) => (
             <button
               key={index}
               aria-label={`Go to slide ${index + 1}`}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                index === currentSlide ? "bg-white" : "bg-white/50"
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === selectedIndex ? "bg-white scale-110" : "bg-white/50"
               }`}
-              onClick={() => setCurrentSlide(index)}
+              onClick={() => scrollTo(index)}
             />
           ))}
         </div>

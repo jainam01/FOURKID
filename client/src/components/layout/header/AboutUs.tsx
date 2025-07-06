@@ -46,9 +46,9 @@ const AnimatedSection = ({ children, className, ref, ...props }: { children: Rea
 
 const AboutUs = () => {
   const team = [
-    { name: "Manish Kothari", role: "Founder & CEO", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/manish_xmxquh.jpg", bio: "With 15+ years in children's fashion, Sarah founded FourKids to create durable, stylish clothing for kids." },
-    { name: "Hitesh Kothari", role: "Design Director", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/hitesh_vqdtbi.jpg", bio: "Michael brings his experience from top fashion houses to create comfortable, functional designs." },
-    { name: "Rahul Kothari", role: "Head of Production", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/rahul_yjowwm.jpg", bio: "Priya ensures all FourKids products meet our high standards for quality and ethical manufacturing." },
+    { name: "Manish Kothari", role: "Founder & CEO", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/manish_xmxquh.jpg", bio: "With 15+ years in children's fashion, Manish Kothari founded FourKids to create durable, stylish clothing for kids." },
+    { name: "Hitesh Kothari", role: "Design Director", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/hitesh_vqdtbi.jpg", bio: "Hitesh Kothari brings his experience from top fashion houses to create comfortable, functional designs." },
+    { name: "Rahul Kothari", role: "Head of Production", image: "https://res.cloudinary.com/dtpinwr0h/image/upload/v1751708782/rahul_yjowwm.jpg", bio: "Rahul kothari ensures all FourKids products meet our high standards for quality and ethical manufacturing." },
     { name: "James Wilson", role: "Sustainability Officer", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop", bio: "James leads our initiatives to reduce environmental impact through sustainable practices." }
   ];
 
@@ -61,9 +61,10 @@ const AboutUs = () => {
   
   const timeline = [
       { year: "2015", title: "The Spark", description: "FourKids is founded with a small collection of everyday essentials for children aged 5-15." },
-      { year: "2018", title: "Digital & Physical Growth", description: "We open our first flagship store and launch our online platform, reaching families nationwide." },
+      { year: "2018", title: "Digital & Physical Growth", description: "We open our first flagship store, reaching families nationwide." },
       { year: "2020", title: "A Greener Step", description: "FourKids introduces our sustainable line, featuring organic cotton and recycled materials." },
-      { year: "2023", title: "Future Forward", description: "We proudly announce that 100% of our packaging is now plastic-free and fully recyclable." }
+      { year: "2023", title: "Future Forward", description: "We proudly announce that 100% of our packaging is now plastic-free and fully recyclable." },
+      { year: "2025", title: "Online Innovation", description: "Revolutionizing wholesale shopping with our new digital platform featuring instant order processing, live chat support, and comprehensive analytics dashboard for retailers." }
   ]
 
   const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.15 } } };
@@ -79,14 +80,21 @@ const AboutUs = () => {
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
                 <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">Our Story</h1>
                 <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-                  FourKids was born from a simple idea: that children's clothing should be as durable and imaginative as they are. Founded in 2015, we set out to create high-quality, ethically-made apparel that kids love to wear and parents can trust.
+                  Fourkids began in 2015 with a vision to revolutionize children's wholesale fashion in India. What started as a small family business has grown into one of the most trusted names in kids' apparel wholesale, serving thousands of retailers across the country.
                 </p>
                 <p className="mt-4 text-lg text-slate-600 leading-relaxed">
-                  From a small collection of everyday essentials, we've grown into a brand beloved by families, committed to style, sustainability, and the simple joy of childhood.
+                  We believe every child deserves comfortable, stylish, and affordable clothing. Our commitment to quality, innovative designs, and exceptional customer service has made us the preferred choice for retailers who want to offer the best to their customers.
+                </p>
+                <p className="mt-4 text-lg text-slate-600 leading-relaxed">
+                  Today, we're proud to be a leading wholesale brand, helping retailers build successful businesses while bringing joy to children and families across India.
                 </p>
             </motion.div>
-            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
-                <img src="https://images.unsplash.com/photo-1519340333755-56e9c1d04579?q=80&w=1887&auto=format&fit=crop" alt="Happy children playing" className="w-full h-full object-cover"/>
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white">
+                <img 
+                  src="https://res.cloudinary.com/dtpinwr0h/image/upload/v1751808191/premium_vector-1731765427289-39cbc90f656e_scpmnb.avif" 
+                  alt="Fourkids children's clothing collection" 
+                  className="w-full h-full object-contain p-4"
+                />
             </motion.div>
         </div>
       </section>

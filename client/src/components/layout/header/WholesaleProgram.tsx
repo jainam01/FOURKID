@@ -226,7 +226,7 @@ const WholesaleProgram = () => {
               {eligibilityCriteria.map((item, index) => (<li key={index} className="flex items-start text-lg"><ClipboardCheck className="h-6 w-6 mr-3 text-green-500 flex-shrink-0 mt-1" /><span>{item}</span></li>))}
             </ul>
           </AnimatedSection>
-          <AnimatedSection><div className="rounded-xl bg-gray-200 aspect-video shadow-lg bg-cover bg-center" style={{ backgroundImage: "url('')" }}></div></AnimatedSection>
+          <AnimatedSection><div className="rounded-xl bg-gray-200 aspect-video shadow-lg bg-cover bg-center" style={{ backgroundImage: "url('https://res.cloudinary.com/dtpinwr0h/image/upload/v1751806963/62918071-210a-4f72-aaa1-27b409c7b4e7_ouzes2.png')" }}></div></AnimatedSection>
         </div>
       </div>
 

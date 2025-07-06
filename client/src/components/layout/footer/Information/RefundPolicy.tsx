@@ -13,47 +13,44 @@ import {
 } from "lucide-react";
 
 const RefundPolicyPage = () => {
-  // Your specific details (replace placeholders)
-  const companyName = "DesiQlo";
-  const contactEmail = "hello@desi-closet.com";
-  const refundProcessingTime = "18-25 working days"; // For unavailable products
-  const generalRefundProcessingTime = "30 days"; // After approval
-  const cancellationWindow = "24 hours";
-  const balancePaymentWindow = "30 days";
-  const returnWindow = "25 days";
-  const refundClaimWindow = "15 days";
-  const disputeResponseTime = "48 working hours";
+  // --- UPDATE YOUR SPECIFIC BUSINESS TERMS HERE ---
+  const companyName = "Fourkids";
+  const contactEmail = "arihant.8758586464@gmail.com";
+  const contactPhone = "+91 875858 6464";
 
+  // Review and set your business-specific timeframes
+  const cancellationWindow = "48 hours"; // eg., 24 or 48 hours
+  const balancePaymentWindow = "7 days"; // Time to pay remaining amount after QC
+  const returnClaimWindow = "7 days"; // Time to report defects after delivery
+  const refundProcessingTime = "10-15 working days"; // After refund approval
+
+  // Reasons a retailer can claim a refund for (usually for defects or errors)
   const refundClaimReasons = [
-    "Quantity shortage",
-    "Quantity issues",
-    "Counterfeit goods",
-    "Materials not as described",
-    "Color not as described (excluding minor differences)",
-    "Used items",
-    "Brand problem or imitation not as described",
-    "Missing item",
-    "Missing parts",
-    "Damaged goods",
-    "Size mismatch",
-    "Style mismatch",
-    "Undelivered items",
-    "Seized by Customs",
-    "Package was empty",
+    "Significant quantity shortage in sealed package",
+    "Major manufacturing defects (e.g., faulty stitching)",
+    "Damaged goods upon arrival (with unboxing video)",
+    "Incorrect style/assortment shipped",
+    "Size mismatch from what was ordered",
+    "Missing items from the order",
   ];
 
-  const returnClaimReasons = [
-    "Missing item",
-    "Missing parts",
-    "Damaged goods",
-    "Style mismatch",
+  // Most wholesale businesses have very strict return policies.
+  // Often, returns are only for credit or replacement, not cash refunds.
+  // This policy reflects returns for severe issues.
+  const returnConditions = [
+    "Items must be in their original, unused condition with all tags intact.",
+    "Returns for unsold inventory or change of mind are not accepted.",
+    "Items must be returned as a complete set if purchased as one.",
   ];
 
   return (
     <div className="refund-policy-page bg-background text-foreground">
-      <Helmet>
+       <Helmet>
         <title>Refund & Return Policy - {companyName}</title>
-        <meta name="description" content={`Understand ${companyName}'s policies on payments, cancellations, refunds, and returns for your orders.`} />
+        <meta
+          name="description"
+          content={`Understand ${companyName}'s policies on payments, cancellations, refunds, and returns.`}
+        />
       </Helmet>
 
       {/* Hero Section */}
@@ -77,14 +74,13 @@ const RefundPolicyPage = () => {
             {/* Payment Terms */}
             <div>
               <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <CreditCard className="h-6 w-6 mr-3 text-primary" /> Payment Terms & Order Adjustments
+                <CreditCard className="h-6 w-6 mr-3 text-primary" /> Payment & Order Confirmation
               </h2>
               <div className="prose max-w-none dark:prose-invert space-y-3">
-                <p>Orders are considered confirmed once payment is successfully processed.</p>
-                <p>Orders with a total value exceeding $50 USD are eligible for free shipping. Orders below $50 USD will incur a shipping charge of $14.90 USD.</p>
-                <p>We ensure that all products in your order meet quality standards. {companyName} will calculate and share the final order value after removing any products that fail quality checks or are unavailable.</p>
-                <p>If any products become unavailable post-confirmation, {companyName} will issue a refund for those items within <strong>{refundProcessingTime}</strong> from the date of order delivery.</p>
-                <p>The {companyName} team can share the exact price quotation for products and delivery (Air, Sea, Road) charges. All other charges, i.e., customs duty and taxes, are determined by the destination country’s local tax authorities and therefore need to be paid by the customers at the time of delivery.</p>
+                <p>All wholesale orders require an advance payment to begin processing. The order is considered confirmed only after this payment is successfully received.</p>
+                <p>After procurement and final quality checks, our team will share the final invoice with you. This invoice will reflect the actual quantity of goods ready for dispatch, adjusted for any items that did not meet our quality standards or were unavailable.</p>
+                <p>The final balance payment must be completed within <strong>{balancePaymentWindow}</strong> of receiving the final invoice. Dispatch will only occur after the full payment is cleared.</p>
+                <p>All prices are exclusive of GST and shipping charges. These will be calculated and included in the final invoice.</p>
               </div>
             </div>
             <Separator />
@@ -92,92 +88,59 @@ const RefundPolicyPage = () => {
             {/* Cancellation Policy */}
             <div>
               <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <XCircle className="h-6 w-6 mr-3 text-primary" /> Cancellation Policy
+                <XCircle className="h-6 w-6 mr-3 text-primary" /> Order Cancellation
               </h2>
               <div className="prose max-w-none dark:prose-invert space-y-3">
-                <p>Cancellation is allowed within <strong>{cancellationWindow}</strong> of order confirmation. In such cases, the amount paid will be refunded.</p>
-                <p>After {cancellationWindow} and up to the point of dispatch, orders cannot be canceled as products are typically already in production or dispatch stages with suppliers.</p>
-                <p>The final balance payment (if any) must be completed within <strong>{balancePaymentWindow}</strong> of the request for the balance amount. If not paid within this period, the order will be considered cancelled, and any advance amount paid will not be refundable.</p>
+                <p>Order cancellation is permitted within <strong>{cancellationWindow}</strong> of placing the order and paying the advance. In this case, the advance amount will be refunded after deducting any processing fees.</p>
+                <p>After the {cancellationWindow} window, orders cannot be canceled as they enter the production and procurement phase.</p>
+                <p>If the final balance payment is not completed within the {balancePaymentWindow} window, the order will be automatically cancelled and the advance amount paid will be forfeited to cover procurement and holding costs.</p>
               </div>
             </div>
             <Separator />
 
-            {/* Refund Policy */}
+            {/* Refund & Return Policy */}
             <div>
               <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <RotateCcw className="h-6 w-6 mr-3 text-primary" /> Refund Policy
+                <RotateCcw className="h-6 w-6 mr-3 text-primary" /> Refund & Return Policy
               </h2>
               <div className="prose max-w-none dark:prose-invert space-y-3">
-                <p>Customers can claim a refund for the amount paid towards their order in the following situations:</p>
+                <p>We stand by the quality of our products. Claims for returns or refunds are accepted only for the following reasons, which must be reported within <strong>{returnClaimWindow}</strong> of receiving your shipment:</p>
                 <ul className="list-disc pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                   {refundClaimReasons.map(reason => <li key={reason}>{reason}</li>)}
                 </ul>
 
-                <h3 className="text-xl font-medium pt-4 !mb-2">How to Claim a Refund:</h3>
+                <h3 className="text-xl font-medium pt-4 !mb-2">How to File a Claim:</h3>
                 <p>
-                  To claim a refund, please send an email to <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">{contactEmail}</a>, clearly mentioning the reason for the refund claim along with supporting evidence (pictures and videos of the issue).
+                  To file a claim, you MUST provide a clear, unedited, and continuous unboxing video of the sealed package, showing the shipping label clearly. The video must clearly show the issue you are reporting.
+                </p>
+                <p>
+                  Please email your claim with the unboxing video and detailed description to <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">{contactEmail}</a>. Claims without a valid unboxing video will not be entertained.
                 </p>
 
-                <h3 className="text-xl font-medium pt-4 !mb-2">Refund Status and Processing:</h3>
+                <h3 className="text-xl font-medium pt-4 !mb-2">Return Conditions:</h3>
+                <ul className="list-disc pl-5">
+                  {returnConditions.map(reason => <li key={reason}>{reason}</li>)}
+                </ul>
+
+                <h3 className="text-xl font-medium pt-4 !mb-2">Resolution Process:</h3>
                 <p>
-                  All approved refunds will be credited to your original payment method or account within <strong>{generalRefundProcessingTime}</strong> of refund approval. You will receive communication regarding the refund status via email from our official ID: {contactEmail}.
+                  Upon verification of your claim, our team will offer a resolution, which may be a replacement of the defective item(s) in your next order, a store credit, or a partial/full refund to your original payment method. The resolution will be at the sole discretion of {companyName}.
                 </p>
+                <p>
+                  Approved refunds will be processed within <strong>{refundProcessingTime}</strong>. The return shipping cost for approved claims will be coordinated by our team.
+                </p>
+
                 <Alert variant="destructive" className="mt-4">
                   <ShieldAlert className="h-4 w-4" />
-                  <AlertTitle>Important Note on Color Differences</AlertTitle>
+                  <AlertTitle>Important Note on Product Variations</AlertTitle>
                   <AlertDescription>
-                    No refunds will be processed for minor color differences between the product images on our website/listings and the actual products delivered. Colors can vary due to different lighting conditions and screen display settings.
+                    As a wholesale business, minor variations in color, print, or texture are a normal part of the manufacturing process. Claims will not be accepted for such minor differences.
                   </AlertDescription>
                 </Alert>
               </div>
             </div>
             <Separator />
-
-            {/* Return Policy */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <RotateCcw className="h-6 w-6 mr-3 text-primary" /> Return Policy
-              </h2>
-              <div className="prose max-w-none dark:prose-invert space-y-3">
-                <p>Items purchased on {companyName}.com are eligible for return if you are not satisfied with them, with the following exceptions:</p>
-                <ul className="list-disc pl-5">
-                  <li>Clothing items that have been worn, washed, or damaged after delivery.</li>
-                  {/* Add any other non-returnable item categories here */}
-                </ul>
-                <p>Customers can claim for the return of products purchased in their order in the following situations:</p>
-                <ul className="list-disc pl-5">
-                  {returnClaimReasons.map(reason => <li key={reason}>{reason}</li>)}
-                </ul>
-                <h3 className="text-xl font-medium pt-4 !mb-2">How to Initiate a Return:</h3>
-                <p>
-                  To initiate a return, please write to us at <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">{contactEmail}</a>, detailing the reason for the return and providing necessary evidence.
-                </p>
-                <p>
-                  The return shipping cost must be borne by the customer.
-                </p>
-                <p>
-                  If an item is eligible for return and subsequent refund, you may return it within the return window of <strong>{returnWindow}</strong> from the day the order was delivered to your address.
-                </p>
-              </div>
-            </div>
-            <Separator />
             
-            {/* Dispute Resolution & General Claim Timeframe */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                <ShieldAlert className="h-6 w-6 mr-3 text-primary" /> Dispute Resolution & Claim Deadlines
-              </h2>
-              <div className="prose max-w-none dark:prose-invert space-y-3">
-                <p>
-                  The {companyName} team responds to every dispute query (refund or return claim) within <strong>{disputeResponseTime}</strong>.
-                </p>
-                <p>
-                  <strong>Important:</strong> All refund claims must be made within <strong>{refundClaimWindow}</strong> of order delivery. We do not accept any refund claims beyond this period.
-                </p>
-              </div>
-            </div>
-            <Separator />
-
             {/* Contact for Policy Inquiries */}
             <div>
               <h2 className="text-2xl font-semibold mb-3 flex items-center">
@@ -185,7 +148,12 @@ const RefundPolicyPage = () => {
               </h2>
               <div className="prose max-w-none dark:prose-invert">
                 <p>
-                  If you have any questions or require clarification regarding our Payment, Cancellation, Refund, or Return Policies, please do not hesitate to contact us at <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">{contactEmail}</a>.
+                  We believe in building strong partnerships with our retailers. If you have any questions regarding our wholesale policies, please do not hesitate to contact us.
+                </p>
+                <p>
+                  <strong>Email:</strong> <a href={`mailto:${contactEmail}`} className="text-primary hover:underline">{contactEmail}</a>
+                  <br/>
+                  <strong>Phone/WhatsApp:</strong> <a href={`tel:${contactPhone.replace(/\D/g, '')}`} className="text-primary hover:underline">{contactPhone}</a>
                 </p>
               </div>
             </div>
