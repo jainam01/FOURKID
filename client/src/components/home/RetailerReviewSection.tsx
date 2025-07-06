@@ -9,55 +9,56 @@ import { Star, Quote, ArrowLeft, ArrowRight } from 'lucide-react';
 // --- DUMMY DATA: Replace this with data from your API or a static list ---
 const reviews = [
   {
-    name: "Priya Sharma",
-    company: "Owner, Little Threads Boutique",
-    avatarUrl: "https://i.pravatar.cc/150?img=1", // Placeholder image
+    name: "Sneha Patel",
+    company: "Owner, Little Wonders – Ahmedabad",
+    avatarUrl: "https://randomuser.me/api/portraits/women/65.jpg",
     rating: 5,
-    reviewText: "Fourkids has transformed our inventory. The quality is exceptional for the price, and their designs are always on-trend. Our customers love the new collection, and our sales have never been better!"
+    reviewText: "We’ve been sourcing from Fourkids for over 2 years now. Their capris and tops sell like hotcakes! Our repeat customers specifically ask for Fourkids stock. Loved the new summer collection – vibrant and comfy!"
   },
   {
-    name: "Rajesh Kumar",
-    company: "Manager, Tiny Tots Apparel",
-    avatarUrl: "https://i.pravatar.cc/150?img=3", // Placeholder image
+    name: "Amit Verma",
+    company: "Retail Partner, BabyZone – Lucknow",
+    avatarUrl: "https://randomuser.me/api/portraits/men/52.jpg",
     rating: 5,
-    reviewText: "The wholesale process is incredibly smooth and their customer service is top-notch. Fast dispatch and reliable quality mean we can always count on Fourkids for our seasonal stock."
+    reviewText: "Fourkids is a blessing for mid-tier retailers like us. Their stock rotation is quick, prices are competitive, and the margins are good. Most importantly, we never have to worry about quality returns!"
   },
   {
-    name: "Anjali Mehta",
-    company: "Founder, Star Kids Hub",
-    avatarUrl: "https://i.pravatar.cc/150?img=5", // Placeholder image
+    name: "Neha Jain",
+    company: "Founder, KidsKart – Jaipur",
+    avatarUrl: "https://randomuser.me/api/portraits/women/55.jpg",
     rating: 4,
-    reviewText: "A fantastic range of products. We've seen great sell-through on their capris and basic pants. I wish they had a slightly larger selection in the plus-size category, but overall, we are very satisfied."
+    reviewText: "Loved their cotton collections and ethnic festive wear for toddlers. Packaging is neat, dispatch is usually on time. Just hoping they expand their collection in newborn wear too."
   },
   {
-    name: "Vikram Singh",
-    company: "Buyer, City Children's Wear",
-    avatarUrl: "https://i.pravatar.cc/150?img=8", // Placeholder image
+    name: "Rakesh Bansal",
+    company: "Distributor, Bachpan Bazaar – Delhi NCR",
+    avatarUrl: "https://randomuser.me/api/portraits/men/33.jpg",
     rating: 5,
-    reviewText: "Finally, a wholesale brand that understands the Indian market. The styles are perfect for our customers, and the durability is impressive. Fourkids is our go-to supplier now."
+    reviewText: "I supply to over 20 retailers, and almost all prefer Fourkids for their reliability and fit. What really stands out is how trendy their designs are, even in small towns."
   },
   {
-    name: "Jainam Gadhecha",
-    company: "Buyer, City Children's Wear",
-    avatarUrl: "https://i.pravatar.cc/150?img=8", // Placeholder image
-    rating: 5,
-    reviewText: "Finally, a wholesale brand that understands the Indian market. The styles are perfect for our customers, and the durability is impressive. Fourkids is our go-to supplier now."
-  },
-  {
-    name: "Shasan Mehta",
-    company: "Buyer, City Children's Wear",
-    avatarUrl: "https://i.pravatar.cc/150?img=8", // Placeholder image
+    name: "Pooja Desai",
+    company: "Manager, BabyNest Store – Surat",
+    avatarUrl: "https://randomuser.me/api/portraits/women/41.jpg",
     rating: 4,
-    reviewText: "Finally, a wholesale brand that understands the Indian market. The styles are perfect for our customers, and the durability is impressive. Fourkids is our go-to supplier now."
+    reviewText: "Fourkids gives a good mix of stylish and traditional. Delivery timelines are mostly fine, and the support team is responsive. Would love to see more matching sets and baby accessories soon."
   },
   {
-    name: "Mansi Koradiya",
-    company: "Buyer, City Children's Wear",
-    avatarUrl: "https://i.pravatar.cc/150?img=8", // Placeholder image
+    name: "Rahul Shetty",
+    company: "Owner, Tiny Tails – Bengaluru",
+    avatarUrl: "https://randomuser.me/api/portraits/men/44.jpg",
     rating: 5,
-    reviewText: "Finally, a wholesale brand that understands the Indian market. The styles are perfect for our customers, and the durability is impressive. Fourkids is our go-to supplier now."
+    reviewText: "As someone who runs a boutique kids’ store, I need consistency. Fourkids delivers exactly that – consistent quality, clear sizing, and excellent support. Keep up the great work!"
   },
+  {
+    name: "Ishita Gupta",
+    company: "Co-Founder, Tots & Trends – Chandigarh",
+    avatarUrl: "https://randomuser.me/api/portraits/women/30.jpg",
+    rating: 5,
+    reviewText: "My team and I love working with Fourkids. The ordering system is simple, and the stock is always fresh. Plus, the customer care team really listens to feedback. That’s rare these days!"
+  }
 ];
+
 
 // --- A helper component for star ratings ---
 const StarRating = ({ rating }: { rating: number }) => (
