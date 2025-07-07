@@ -25,6 +25,8 @@ import WholesaleProgram from "@/components/layout/header/WholesaleProgram";
 import AboutUs from "@/components/layout/header/AboutUs";
 import ContactUs from "@/components/layout/footer/contact";
 import FAQPage from "@/components/layout/footer/faq";
+import CategorySection from "@/components/home/CategorySection";
+
 // Admin Page Components (these will be children of AdminLayout)
 import AdminDashboard from "@/pages/admin/Dashboard";
 import ManageProducts from "@/pages/admin/ManageProducts";
@@ -76,7 +78,7 @@ function App() {
       <ScrollToTop />
         <Switch>
           <Route path="/" component={Home} />
-
+          <Route path="/categories" component={CategorySection} />
           
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
