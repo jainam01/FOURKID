@@ -63,13 +63,18 @@ export class DbStorage implements IStorage {
   }
 
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
     const result = await db.update(users)
-      .set(userData)
+      .set({
+        ...userData,
+        password: hashedPassword
+      })
       .where(eq(users.id, id))
       .returning();
     return result[0];
   }
-
+  
   // Category operations
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories);
@@ -468,6 +473,17 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
+  async login(email: string, password: string): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return undefined;
 
+    const bcrypt = require('bcrypt');
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return undefined;
+    }
+
+    return user;
+  }
 }
 
