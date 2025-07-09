@@ -300,7 +300,7 @@ export function useProductReviews(productId?: number) {
 }
 
 
-// --- ADMIN REVIEWS API (UPDATED SECTION) ---
+// --- ADMIN REVIEWS API ---
 export function useAdminGetAllReviews() {
   return useQuery<AdminReview[]>({
     queryKey: ['/api/admin/reviews'],
@@ -536,5 +536,53 @@ export function useDeleteBanner() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/banners'] });
     }
+  });
+}
+
+
+// --- NEW USER API SECTION ---
+
+// This hook is for updating a user's password.
+// It calls the new secure endpoint on the backend.
+interface UpdatePasswordPayload {
+  userId: number;
+  currentPassword: string;
+  newPassword: string;
+}
+
+export function useUpdatePassword() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, Error, UpdatePasswordPayload>({
+    mutationFn: async ({ userId, currentPassword, newPassword }) => {
+      const res = await apiRequest("PUT", `/api/users/${userId}/password`, {
+        currentPassword,
+        newPassword,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "An unknown error occurred." }));
+        throw new Error(errorData.message);
+      }
+
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: data.message || "Password updated successfully.",
+        className: "bg-green-600 text-white",
+      });
+       // Invalidate queries that depend on user data to refetch them
+       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error.message,
+      });
+    },
   });
 }

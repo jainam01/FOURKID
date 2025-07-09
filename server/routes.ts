@@ -1,3 +1,5 @@
+// File: server/src/index.ts
+
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from "express";
 import type { Express } from "express";
@@ -7,7 +9,7 @@ import { loginSchema, insertUserSchema, insertProductSchema, insertCategorySchem
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import createMemoryStore from "memorystore";
+import bcrypt from 'bcrypt';
 import { z } from "zod";
 import nodemailer from "nodemailer";
 import cors from 'cors';
@@ -66,14 +68,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!adminUser) {
       await storage.createUser({
         email: 'admin@fourkids.com',
-        password: 'admin123',
+        password: 'admin@123', // <--- CORRECTED PASSWORD
         name: 'Admin User',
         businessName: 'FourKids Admin',
         phoneNumber: '1234567890',
         address: 'Admin Address',
         role: 'admin'
       });
-      console.log('Admin user created successfully');
+      console.log('Admin user created successfully with the correct password.');
     }
   } catch (error) {
     console.error('Error creating admin user:', error);
@@ -105,12 +107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug middleware for session issues
   app.use((req, res, next) => {
-    console.log('Session debug:', {
-      sessionID: req.sessionID,
-      isAuthenticated: req.isAuthenticated(),
-      user: req.user ? { id: (req.user as any).id, email: (req.user as any).email } : null,
-      cookies: req.headers.cookie ? 'present' : 'missing'
-    });
+    // console.log('Session debug:', {
+    //   sessionID: req.sessionID,
+    //   isAuthenticated: req.isAuthenticated(),
+    //   user: req.user ? { id: (req.user as any).id, email: (req.user as any).email } : null,
+    //   cookies: req.headers.cookie ? 'present' : 'missing'
+    // });
     next();
   });
 
@@ -120,21 +122,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { usernameField: "email" },
       async (email, password, done) => {
         try {
-          console.log('Attempting login for email:', email);
-          const user = await storage.getUserByEmail(email);
+          const user = await storage.login(email, password);
           if (!user) {
-            console.log('User not found:', email);
-            return done(null, false, { message: "Incorrect email." });
+            return done(null, false, { message: "Incorrect email or password." });
           }
-          if (user.password !== password) {
-            console.log('Invalid password for user:', email);
-            return done(null, false, { message: "Incorrect password." });
-          }
-          console.log('Login successful for user:', email);
           return done(null, user);
         } catch (err) {
-          console.error('Login error:', err);
-          return done(err);
+          return done(err as Error);
         }
       }
     )
@@ -165,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return next();
     }
     res.status(401).json({
-      message: "Login required to send a message."
+      message: "Login required."
     });
   };
 
@@ -244,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Login request received:", req.body);
       const credentials = loginSchema.parse(req.body);
       
-      passport.authenticate("local", (err: Error, user: any, info: { message: string }) => {
+      passport.authenticate("local", (err: Error | null, user: any, info: { message: string }) => {
         if (err) {
           console.error('Login error:', err);
           return res.status(500).json({ message: "Authentication failed", error: err.message });
@@ -286,6 +280,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(401).json({ message: "Not authenticated" });
     }
   });
+
+  // --- NEW PASSWORD UPDATE ROUTE ---
+  app.put("/api/users/:id/password", isAuthenticated, async (req, res) => {
+    try {
+      const userIdToUpdate = Number(req.params.id);
+      const loggedInUserId = (req.user as any).id;
+      const userRole = (req.user as any).role;
+  
+      // Ensure users can only change their own password, unless they are an admin
+      if (userIdToUpdate !== loggedInUserId && userRole !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: You can only change your own password." });
+      }
+  
+      const passwordSchema = z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(6, "New password must be at least 6 characters."),
+      });
+  
+      const { currentPassword, newPassword } = passwordSchema.parse(req.body);
+  
+      // Get the user from the database to verify the current password
+      const user = await storage.getUser(userIdToUpdate);
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+  
+      // Verify the current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Incorrect current password." });
+      }
+  
+      // If verification passes, update the user with the new, hashed password
+      const updatedUser = await storage.updateUser(userIdToUpdate, { password: newPassword });
+  
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password." });
+      }
+  
+      res.json({ message: "Password updated successfully." });
+  
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.flatten() });
+      }
+      console.error("Error updating password:", error);
+      res.status(500).json({ message: "An error occurred while updating the password.", error: (error as Error).message });
+    }
+  });
+
 
   // Category routes
   app.get("/api/categories", async (req, res) => {

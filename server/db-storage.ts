@@ -1,3 +1,5 @@
+// File: server/src/db-storage.ts
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { eq, and, desc, sql } from 'drizzle-orm'; // Added 'desc'
@@ -15,6 +17,7 @@ import {
   ProductVariant
 } from '@shared/schema';
 import { IStorage } from './storage';
+import bcrypt from 'bcrypt';
 
 // if (!process.env.DATABASE_URL) {
 //   throw new Error('DATABASE_URL environment variable is required');
@@ -58,20 +61,28 @@ export class DbStorage implements IStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(userData).returning();
+    // Hash password before creating user
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const result = await db.insert(users).values({ ...userData, password: hashedPassword }).returning();
     return result[0];
   }
 
+  // --- UPDATED METHOD ---
+  // This method now correctly handles password updates by checking if a new password is provided.
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
-    const bcrypt = require('bcrypt');
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const updateData: Partial<InsertUser> = { ...userData };
+
+    // Only hash and update the password if it's actually provided in the userData
+    if (userData.password) {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      updateData.password = hashedPassword;
+    }
+
     const result = await db.update(users)
-      .set({
-        ...userData,
-        password: hashedPassword
-      })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
+      
     return result[0];
   }
   
@@ -477,7 +488,6 @@ export class DbStorage implements IStorage {
     const user = await this.getUserByEmail(email);
     if (!user) return undefined;
 
-    const bcrypt = require('bcrypt');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return undefined;
@@ -486,4 +496,3 @@ export class DbStorage implements IStorage {
     return user;
   }
 }
-
