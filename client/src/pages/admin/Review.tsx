@@ -1,13 +1,16 @@
-import { useAdminGetAllReviews } from "@/lib/api"; // Assuming your hook is here
+// File: client/src/pages/admin/AdminReviewsPage.tsx
+
+import { useAdminGetAllReviews, useApproveReview, useDeleteReview } from "@/lib/api";
 import { AdminReview } from "@shared/schema";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -18,13 +21,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, Loader2, MoreHorizontal, AlertTriangle, Trash2 } from "lucide-react";
+import { CheckCircle, Loader2, MoreHorizontal, AlertTriangle, Trash2, Star } from "lucide-react";
+
+// A small helper component for the rating badge
+const RatingBadge = ({ rating }: { rating: number }) => (
+  <Badge
+    variant={rating >= 4 ? "default" : rating >= 3 ? "secondary" : "destructive"}
+    className={rating >= 4 ? "bg-green-600 text-white hover:bg-green-700" : ""}
+  >
+    {rating} <Star className="ml-1 h-3 w-3" fill="currentColor" />
+  </Badge>
+);
+
+// A helper component for the status badge
+const StatusBadge = ({ status }: { status: 'pending' | 'approved' }) => (
+  <Badge variant={status === "approved" ? "default" : "secondary"}
+         className={status === 'approved' ? 'bg-green-100 text-green-800 border-green-300' : ''}>
+    {status.charAt(0).toUpperCase() + status.slice(1)}
+  </Badge>
+);
 
 const AdminReviewsPage = () => {
-  // 1. Fetch review data using your hook
   const { data: reviews, isLoading, error } = useAdminGetAllReviews();
+  const approveReviewMutation = useApproveReview();
+  const deleteReviewMutation = useDeleteReview();
 
-  // 2. Handle API states (Loading, Error, No Data)
+  const handleApproveReview = (reviewId: number) => {
+    approveReviewMutation.mutate(reviewId);
+  };
+
+  const handleDeleteReview = (reviewId: number) => {
+    if (window.confirm("Are you sure you want to permanently delete this review?")) {
+      deleteReviewMutation.mutate(reviewId);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[50vh] w-full items-center justify-center">
@@ -42,102 +73,121 @@ const AdminReviewsPage = () => {
       </div>
     );
   }
-  
-  // Placeholder functions for actions. In a real app, these would trigger mutations.
-  const handleApproveReview = (reviewId: number) => {
-    console.log(`Approving review with ID: ${reviewId}`);
-    // Example: approveReviewMutation.mutate(reviewId);
-    alert(`Approving review #${reviewId}`);
-  };
 
-  const handleDeleteReview = (reviewId: number) => {
-    console.log(`Deleting review with ID: ${reviewId}`);
-    // Example: deleteReviewMutation.mutate(reviewId);
-    alert(`Deleting review #${reviewId}`);
-  };
-
-  // 3. Render the main page content
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Customer Reviews</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {(!reviews || reviews.length === 0) ? (
-            <div className="py-16 text-center text-muted-foreground">
-              No reviews found.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Rating</TableHead>
-                  <TableHead>Comment</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reviews.map((review: AdminReview) => (
-                  <TableRow key={review.id}>
-                    <TableCell className="font-medium">{review.product.name}</TableCell>
-                    <TableCell>
-                      <div>{review.user.name}</div>
-                      <div className="text-xs text-muted-foreground">{review.user.email}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          review.rating >= 4 ? "default" : review.rating === 3 ? "secondary" : "destructive"
-                        }
-                        className={review.rating >= 4 ? "bg-green-600 text-white" : ""}
-                      >
-                        {review.rating} ★
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate" title={review.comment}>
-                      {review.comment}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(review.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                       <Badge variant={review.status === "approved" ? "default" : "secondary"}>
-                          {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
-                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleApproveReview(review.id)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            <span>Approve</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-500" onClick={() => handleDeleteReview(review.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Delete</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+    <Card>
+      <CardHeader>
+        <CardTitle>Manage Customer Reviews</CardTitle>
+        <CardDescription>Approve or delete customer-submitted reviews.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(!reviews || reviews.length === 0) ? (
+          <div className="py-16 text-center text-muted-foreground">
+            No reviews found.
+          </div>
+        ) : (
+          <>
+            {/* DESKTOP VIEW: TABLE (hidden on small screens) */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Comment</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                </TableHeader>
+                <TableBody>
+                  {reviews.map((review) => (
+                    <TableRow key={review.id}>
+                      <TableCell className="font-medium">{review.product.name}</TableCell>
+                      <TableCell>
+                        <div>{review.user.name}</div>
+                        <div className="text-xs text-muted-foreground">{review.user.email}</div>
+                      </TableCell>
+                      <TableCell><RatingBadge rating={review.rating} /></TableCell>
+                      <TableCell className="max-w-xs truncate" title={review.comment}>{review.comment}</TableCell>
+                      <TableCell>{new Date(review.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell><StatusBadge status={review.status} /></TableCell>
+                      <TableCell className="text-right">
+                        <ReviewActions review={review} onApprove={handleApproveReview} onDelete={handleDeleteReview} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {/* MOBILE VIEW: CARD LIST (only shows on small screens) */}
+            <div className="space-y-4 md:hidden">
+              {reviews.map((review) => (
+                <Card key={review.id} className="w-full">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-base">{review.product.name}</CardTitle>
+                        <CardDescription>by {review.user.name}</CardDescription>
+                      </div>
+                      <ReviewActions review={review} onApprove={handleApproveReview} onDelete={handleDeleteReview} />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
+                      <RatingBadge rating={review.rating} />
+                      <span>•</span>
+                      <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-foreground">{review.comment}</p>
+                  </CardContent>
+                  <CardFooter>
+                    <StatusBadge status={review.status} />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Extracted Actions Dropdown for reusability between mobile and desktop views
+const ReviewActions = ({ review, onApprove, onDelete }: { review: AdminReview, onApprove: (id: number) => void, onDelete: (id: number) => void }) => {
+  const approveReviewMutation = useApproveReview();
+  const deleteReviewMutation = useDeleteReview();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() => onApprove(review.id)}
+          disabled={review.status === 'approved' || approveReviewMutation.isPending}
+        >
+          <CheckCircle className="mr-2 h-4 w-4" />
+          <span>Approve</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          onClick={() => onDelete(review.id)}
+          disabled={deleteReviewMutation.isPending}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          <span>Delete</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

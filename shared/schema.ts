@@ -153,8 +153,7 @@ export interface ProductVariant {
 }
 
 export interface ProductWithDetails extends Product {
-  businessName: ReactNode;
- 
+  // businessName: string;
   category: Category;
 }
 

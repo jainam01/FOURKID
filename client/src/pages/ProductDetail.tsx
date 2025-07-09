@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
@@ -9,11 +8,12 @@ import {
   useAddToCart, 
   useAddToWatchlist, 
   useAddReview,
-  useCart
+  useCart,
+  useProductReviews
 } from "@/lib/api";
 import { useUser } from "@/lib/auth";
 import { ProductVariant } from "@shared/schema";
-import { Heart, ShoppingBag, Star, Loader2, ArrowRight } from "lucide-react";
+import { Heart, ShoppingBag, Star, Loader2, ArrowRight, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,7 @@ const ProductDetail = () => {
   const productId = parseInt(id);
   const [, navigate] = useLocation();
   const { data: product, isLoading, error } = useProduct(productId, { enabled: !!productId });
+  const { data: reviews, isLoading: reviewsLoading } = useProductReviews(productId);
   const { data: allProducts = [] } = useProducts();
   const { data: cartItems = [] } = useCart();
 
@@ -169,7 +170,7 @@ const ProductDetail = () => {
   const formatPrice = (price: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
   const sizeOptions = product?.variants?.filter(v => v.name.toLowerCase() === 'size').map(v => v.value) || [];
 
-  if (isLoading) return <div className="container p-8 text-center">Loading product...</div>;
+  if (isLoading) return <div className="container p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></div>;
   if (error || !product) return <div className="container p-8 text-center text-red-500">Product not found.</div>;
 
   const isOutOfStock = product.stock === 0;
@@ -292,13 +293,15 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
-        
-        <div className="mt-16 border-t pt-8">
-            <h2 className="text-2xl font-bold mb-6">Ratings & Reviews</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16">
-                <div>
-                    <form onSubmit={handleReviewSubmit}>
-                        <h3 className="text-lg font-semibold mb-2">Write a Review</h3>
+        <div className="mt-16 border-t pt-12">
+            <h2 className="text-2xl font-bold mb-8">Ratings & Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+                
+                {/* Review Submission Form (Left Side or Top on Mobile) */}
+                <div className="lg:col-span-5">
+                    <form onSubmit={handleReviewSubmit} className="sticky top-24">
+                        <h3 className="text-lg font-semibold mb-3">Write a Review</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Share your thoughts with other customers.</p>
                         <div className="flex items-center gap-2 mb-4">
                             {[1, 2, 3, 4, 5].map(star => (
                                 <Star
@@ -312,19 +315,60 @@ const ProductDetail = () => {
                             ))}
                         </div>
                         <Textarea
-                            placeholder="Share your thoughts about the product..."
+                            placeholder="What did you like or dislike? What did you use this product for?"
                             className="mb-4 min-h-[120px]"
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
                         />
-                        <Button type="submit" className="bg-pink-500 hover:bg-pink-600" disabled={addReview.isPending}>
-                            {addReview.isPending ? "Submitting..." : "Submit Review"}
+                        <Button type="submit" className="bg-pink-500 hover:bg-pink-600 w-full" disabled={addReview.isPending}>
+                            {addReview.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Submitting...</> : "Submit Review"}
                         </Button>
                     </form>
                 </div>
+
+                {/* Approved Reviews Display (Right Side or Bottom on Mobile) */}
+                <div className="lg:col-span-7 mt-8 lg:mt-0">
+                    <h3 className="text-lg font-semibold mb-4">Customer Reviews</h3>
+                    {reviewsLoading && (
+                      <div className="flex items-center text-muted-foreground p-8 justify-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Loading reviews...</span>
+                      </div>
+                    )}
+                    
+                    {!reviewsLoading && (!reviews || reviews.length === 0) && (
+                      <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-50/50 rounded-lg border">
+                         <MessageSquare className="h-10 w-10 text-gray-400 mb-3" />
+                         <p className="font-semibold">No reviews yet</p>
+                         <p className="text-sm text-muted-foreground">Be the first to share your thoughts!</p>
+                      </div>
+                    )}
+
+                    {!reviewsLoading && reviews && reviews.length > 0 && (
+                      <div className="space-y-8">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="flex flex-col gap-2 border-b pb-8 last:border-b-0 last:pb-0">
+                             <div className="flex items-center gap-2">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`h-5 w-5 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                      fill="currentColor"
+                                    />
+                                ))}
+                             </div>
+                             <p className="text-sm font-medium text-foreground mt-1">
+                               by {review.user?.name || 'Anonymous'} 
+                               <span className="text-xs text-muted-foreground ml-2">on {new Date(review.createdAt).toLocaleDateString()}</span>
+                             </p>
+                             <p className="text-gray-700 leading-relaxed mt-2">{review.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
             </div>
         </div>
-
         {relatedProducts.length > 0 && (
           <div className="mt-16"><Separator className="mb-12" /><ProductGrid products={relatedProducts} title="Similar Products" /></div>
         )}

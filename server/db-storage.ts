@@ -10,7 +10,7 @@ import {
   cartItems, CartItem, InsertCartItem,
   watchlistItems, WatchlistItem, InsertWatchlistItem,
   banners, Banner, InsertBanner,
-  reviews, InsertReview, AdminReview, // Added review imports
+  reviews, InsertReview, AdminReview, Review, // Added review imports
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
   ProductVariant
 } from '@shared/schema';
@@ -111,7 +111,7 @@ export class DbStorage implements IStorage {
   async getProductsWithDetails(): Promise<ProductWithDetails[]> {
     const productList = await db.select().from(products);
     const categoryList = await db.select().from(categories);
-    
+
     return productList.map(product => ({
       ...product,
       category: categoryList.find(cat => cat.id === product.categoryId)!
@@ -125,7 +125,7 @@ export class DbStorage implements IStorage {
   async getProductsByCategorySlug(slug: string): Promise<ProductWithDetails[]> {
     const category = await this.getCategoryBySlug(slug);
     if (!category) return [];
-    
+
     const productList = await db.select().from(products).where(eq(products.categoryId, category.id));
     return productList.map(product => ({
       ...product,
@@ -141,10 +141,10 @@ export class DbStorage implements IStorage {
   async getProductWithDetails(id: number): Promise<ProductWithDetails | undefined> {
     const product = await this.getProduct(id);
     if (!product) return undefined;
-    
+
     const category = await this.getCategory(product.categoryId);
     if (!category) return undefined;
-    
+
     return {
       ...product,
       category
@@ -181,7 +181,7 @@ export class DbStorage implements IStorage {
   async getUserCartItems(userId: number): Promise<CartItemWithProduct[]> {
     const cartItemList = await db.select().from(cartItems).where(eq(cartItems.userId, userId));
     const productList = await db.select().from(products);
-    
+
     return cartItemList.map(item => ({
       ...item,
       product: productList.find(p => p.id === item.productId)!
@@ -195,8 +195,8 @@ export class DbStorage implements IStorage {
 
   async addToCart(itemData: InsertCartItem): Promise<CartItem> {
     const { variantInfo, ...rest } = itemData;
-    
-    const variantComparisonCondition = 
+
+    const variantComparisonCondition =
       variantInfo !== undefined && variantInfo !== null
         ? sql`${cartItems.variantInfo}::jsonb = ${JSON.stringify(variantInfo)}::jsonb`
         : sql`${cartItems.variantInfo} IS NULL`;
@@ -247,7 +247,7 @@ export class DbStorage implements IStorage {
   async getUserWatchlistItems(userId: number): Promise<WatchlistItemWithProduct[]> {
     const watchlistItemList = await db.select().from(watchlistItems).where(eq(watchlistItems.userId, userId));
     const productList = await db.select().from(products);
-    
+
     return watchlistItemList.map(item => ({
       ...item,
       product: productList.find(p => p.id === item.productId)!
@@ -316,7 +316,7 @@ export class DbStorage implements IStorage {
     const orderItemList = await db.select().from(orderItems);
     const productList = await db.select().from(products);
     const userList = await db.select().from(users);
-    
+
     return orderList.map(order => ({
       ...order,
       items: orderItemList
@@ -337,7 +337,7 @@ export class DbStorage implements IStorage {
     const orderList = await this.getUserOrders(userId);
     const orderItemList = await db.select().from(orderItems);
     const productList = await db.select().from(products);
-    
+
     return orderList.map(order => ({
       ...order,
       items: orderItemList
@@ -357,11 +357,11 @@ export class DbStorage implements IStorage {
   async getOrderWithItems(id: number): Promise<OrderWithItems | undefined> {
     const order = await this.getOrder(id);
     if (!order) return undefined;
-    
+
     const orderItemList = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
     const productList = await db.select().from(products);
     const user = await this.getUser(order.userId);
-    
+
     return {
       ...order,
       items: orderItemList.map(item => ({
@@ -375,17 +375,17 @@ export class DbStorage implements IStorage {
   async createOrder(orderData: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
     const result = await db.transaction(async (tx) => {
       const [order] = await tx.insert(orders).values(orderData).returning();
-      
+
       await tx.insert(orderItems).values(
         items.map(item => ({
           ...item,
           orderId: order.id
         }))
       );
-      
+
       return order;
     });
-    
+
     return result;
   }
 
@@ -426,9 +426,32 @@ export class DbStorage implements IStorage {
       .leftJoin(users, eq(reviews.userId, users.id))
       .leftJoin(products, eq(reviews.productId, products.id))
       .orderBy(desc(reviews.createdAt));
-      
+
     // The type assertion is safe because of the select statement structure.
     return result as unknown as AdminReview[];
+  }
+
+  async getApprovedReviewsForProduct(productId: number): Promise<Partial<Review & { user: { name: string } }>[]> {
+    const result = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        comment: reviews.comment,
+        createdAt: reviews.createdAt,
+        user: {
+          name: users.name,
+        },
+      })
+      .from(reviews)
+      .leftJoin(users, eq(reviews.userId, users.id))
+      .where(and(
+        eq(reviews.productId, productId),
+        eq(reviews.status, 'approved') // Only get 'approved' reviews
+      ))
+      .orderBy(desc(reviews.createdAt)); // Show newest reviews first
+
+    // Map user: null to user: undefined for type compatibility
+    return result.map(r => ({ ...r, user: r.user === null ? undefined : r.user }));
   }
 
   async updateReviewStatus(id: number, status: 'approved' | 'pending'): Promise<any> {
@@ -444,4 +467,7 @@ export class DbStorage implements IStorage {
     const result = await db.delete(reviews).where(eq(reviews.id, id)).returning();
     return result.length > 0;
   }
+
+
 }
+

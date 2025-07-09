@@ -1,19 +1,26 @@
 // File: client/src/lib/api.ts
 
-// The top-level queryClient is removed as we will use the hook instead.
 import { apiRequest } from "@/lib/queryClient"; 
 import { useQuery, useMutation, UseQueryOptions, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast"; // Ensure this path is correct for your project
 import { 
   Product, Category, InsertProduct, InsertCategory, 
   CartItem, WatchlistItem,
   Order, InsertOrderItem, Banner, InsertBanner,
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
-  ProductVariant, AdminReview
+  ProductVariant, AdminReview, Review,User
 } from "@shared/schema";
 
 // Categories API
 export function useCategories() {
-  return useQuery<Category[]>({ queryKey: ['/api/categories'] });
+  return useQuery<Category[]>({ 
+    queryKey: ['/api/categories'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/categories`);
+      if (!res.ok) throw new Error("Failed to fetch categories.");
+      return res.json();
+    }
+  });
 }
 
 export function useCategory(id?: number, options?: Omit<UseQueryOptions<Category, Error, Category>, 'queryKey' | 'queryFn'>) {
@@ -21,6 +28,7 @@ export function useCategory(id?: number, options?: Omit<UseQueryOptions<Category
     queryKey: ['/api/categories', id],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/categories/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch category.");
       return await res.json();
     },
     enabled: !!id,
@@ -78,7 +86,14 @@ export function useDeleteCategory() {
 
 // Products API
 export function useProducts() {
-  return useQuery<ProductWithDetails[]>({ queryKey: ['/api/products'] });
+  return useQuery<ProductWithDetails[]>({ 
+    queryKey: ['/api/products'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/products`);
+      if (!res.ok) throw new Error("Failed to fetch products.");
+      return res.json();
+    }
+  });
 }
 
 export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWithDetails, Error, ProductWithDetails>, 'queryKey' | 'queryFn'>) {
@@ -95,7 +110,15 @@ export function useProduct(id: number, options?: Omit<UseQueryOptions<ProductWit
 }
 
 export function useProductsByCategory(categoryId: number) {
-  return useQuery<Product[]>({ queryKey: ['/api/products/category', categoryId], enabled: !!categoryId });
+  return useQuery<Product[]>({ 
+    queryKey: ['/api/products/category', categoryId], 
+    enabled: !!categoryId,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/products/category/${categoryId}`);
+      if (!res.ok) throw new Error("Failed to fetch products for this category.");
+      return res.json();
+    }
+  });
 }
 
 export function useProductsByCategorySlug(slug: string) {
@@ -154,7 +177,14 @@ type AddToCartVariables = {
 };
 
 export function useCart() {
-  return useQuery<CartItemWithProduct[]>({ queryKey: ['/api/cart'] });
+  return useQuery<CartItemWithProduct[]>({ 
+    queryKey: ['/api/cart'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/cart`);
+      if (!res.ok) throw new Error("Failed to fetch cart.");
+      return res.json();
+    }
+  });
 }
 
 export function useAddToCart() {
@@ -220,10 +250,15 @@ interface AddReviewPayload {
   comment: string;
 }
 
+export interface ProductReview extends Pick<Review, 'id' | 'rating' | 'comment' | 'createdAt'> {
+  user: Pick<User, 'name'> | null;
+}
+
 export function useAddReview() {
   const queryClient = useQueryClient();
-  return useMutation<{ message: string }, Error, AddReviewPayload>({
-    mutationFn: async (payload: AddReviewPayload) => {
+  const { toast } = useToast();
+  return useMutation<{ message: string }, Error, { productId: number; rating: number; comment: string; }>({
+    mutationFn: async (payload) => {
       const res = await apiRequest("POST", "/api/reviews", payload);
       if (!res.ok) {
         const error = await res.json().catch(() => ({ message: 'Failed to add review' }));
@@ -233,36 +268,109 @@ export function useAddReview() {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/products', variables.productId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', variables.productId, 'reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/reviews'] });
+      toast({
+        title: "Success",
+        description: "Your review has been submitted and is pending approval.",
+        className: "bg-green-600 text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: error.message,
+      });
     }
   });
 }
 
-// Admin Reviews API
+
+export function useProductReviews(productId?: number) {
+  return useQuery<ProductReview[]>({
+    queryKey: ['/api/products', productId, 'reviews'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/products/${productId}/reviews`);
+      if (!res.ok) throw new Error("Failed to fetch product reviews.");
+      return res.json();
+    },
+    enabled: !!productId,
+  });
+}
+
+
+// --- ADMIN REVIEWS API (UPDATED SECTION) ---
 export function useAdminGetAllReviews() {
   return useQuery<AdminReview[]>({
     queryKey: ['/api/admin/reviews'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/admin/reviews`);
+      if (!res.ok) throw new Error("Failed to fetch admin reviews.");
+      return res.json();
+    }
   });
 }
 
-export function useApproveReview(options?: { onSuccess?: () => void; onError?: (error: Error) => void; }) {
+export function useApproveReview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (reviewId: number) => {
       const res = await apiRequest("PUT", `/api/admin/reviews/${reviewId}/approve`);
-      if (!res.ok) throw new Error("Failed to approve review.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to approve review." }));
+        throw new Error(errorData.message);
+      }
       return res.json();
     },
-    ...options,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', variables, 'reviews'] });
+      toast({
+        title: "Success",
+        description: "The review has been approved.",
+        className: "bg-green-600 text-white",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Approval Failed",
+        description: error.message,
+      });
+    }
   });
 }
 
-export function useDeleteReview(options?: { onSuccess?: () => void; onError?: (error: Error) => void; }) {
+export function useDeleteReview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
   return useMutation<{ message: string }, Error, number>({
     mutationFn: async (reviewId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/reviews/${reviewId}`);
-      if (!res.ok) throw new Error("Failed to delete review.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to delete review." }));
+        throw new Error(errorData.message);
+      }
       return res.json();
     },
-    ...options,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/reviews'] });
+      toast({
+        title: "Success",
+        description: "The review has been deleted.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: error.message,
+      });
+    }
   });
 }
 
@@ -273,7 +381,14 @@ type AddToWatchlistVariables = {
 };
 
 export function useWatchlist() {
-  return useQuery<WatchlistItemWithProduct[]>({ queryKey: ['/api/watchlist'] });
+  return useQuery<WatchlistItemWithProduct[]>({ 
+    queryKey: ['/api/watchlist'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/watchlist`);
+      if (!res.ok) throw new Error("Failed to fetch watchlist.");
+      return res.json();
+    }
+  });
 }
 
 export function useAddToWatchlist() {
@@ -308,13 +423,25 @@ export function useRemoveFromWatchlist() {
 
 // Order API
 export function useOrders() {
-  return useQuery<OrderWithItems[]>({ queryKey: ['/api/orders'] });
+  return useQuery<OrderWithItems[]>({ 
+    queryKey: ['/api/orders'],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/orders`);
+      if (!res.ok) throw new Error("Failed to fetch orders.");
+      return res.json();
+    }
+  });
 }
 
 export function useOrder(id: number) {
   return useQuery<OrderWithItems>({
     queryKey: ['/api/orders', id],
     enabled: !!id,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/orders/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch order.");
+      return res.json();
+    }
   });
 }
 
@@ -349,13 +476,26 @@ export function useUpdateOrderStatus() {
 // Banner API
 export function useBanners(type?: string) {
   const queryKey = type ? ['/api/banners', { type }] : ['/api/banners'];
-  return useQuery<Banner[]>({ queryKey });
+  return useQuery<Banner[]>({ 
+    queryKey,
+    queryFn: async () => {
+      const url = type ? `/api/banners?type=${type}` : '/api/banners';
+      const res = await apiRequest("GET", url);
+      if (!res.ok) throw new Error("Failed to fetch banners.");
+      return res.json();
+    }
+  });
 }
 
 export function useBanner(id: number) {
   return useQuery<Banner>({
     queryKey: ['/api/banners', id],
     enabled: !!id,
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/banners/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch banner.");
+      return res.json();
+    }
   });
 }
 

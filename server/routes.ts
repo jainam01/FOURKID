@@ -793,6 +793,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/products/:id/reviews", async (req, res) => {
+    try {
+      const productId = Number(req.params.id);
+      if (isNaN(productId)) {
+        return res.status(400).json({ message: "Invalid product ID." });
+      }
+
+      // This calls the new method in your DbStorage
+      const reviews = await storage.getApprovedReviewsForProduct(productId);
+      
+      res.json(reviews);
+    } catch (error) {
+      console.error(`Error fetching reviews for product ${req.params.id}:`, error);
+      res.status(500).json({ message: "Failed to fetch reviews", error: (error as Error).message });
+    }
+  });
+
+
+
+  
   // User routes for admin
   app.get("/api/users", isAdmin, async (req, res) => {
     try {
