@@ -8,8 +8,9 @@ import {
   CartItem, WatchlistItem,
   Order, InsertOrderItem, Banner, InsertBanner,
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
-  ProductVariant, AdminReview, Review,User
+  ProductVariant, AdminReview, Review,User ,createOrderInputSchema 
 } from "@shared/schema";
+import { z } from "zod";
 
 // Categories API
 export function useCategories() {
@@ -447,15 +448,31 @@ export function useOrder(id: number) {
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
-  return useMutation<Order, Error, { items: InsertOrderItem[]; address: string; total: number }>({
-    mutationFn: async (orderData) => {
-      const res = await apiRequest("POST", "/api/orders", orderData);
+  const { toast } = useToast();
+
+  return useMutation<Order, Error, z.infer<typeof createOrderInputSchema>>({
+    mutationFn: async (newOrderData) => {
+      const res = await apiRequest("POST", "/api/orders", newOrderData);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to create order." }));
+        throw new Error(errorData.message);
+      }
       return await res.json();
     },
     onSuccess: () => {
+      // When the order is created successfully, refetch orders and cart data
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
-    }
+    },
+    onError: (error) => {
+      // This toast is handled in the CheckoutPage component for more specific feedback,
+      // but we can keep a fallback here.
+      toast({
+        variant: "destructive",
+        title: "Order Creation Failed",
+        description: error.message || "There was a problem saving your order. Please contact support.",
+      });
+    },
   });
 }
 
@@ -586,3 +603,5 @@ export function useUpdatePassword() {
     },
   });
 }
+
+export { apiRequest };

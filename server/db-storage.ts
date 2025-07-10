@@ -530,4 +530,66 @@ export class DbStorage implements IStorage {
 
     return user;
   }
+
+  // =================================================================
+  // ===================== NEW/MODIFIED ORDER LOGIC ==================
+  // =================================================================
+
+  // NEW method to create an order directly from the user's cart in a safe transaction.
+  async createOrderFromCart(userId: number, paymentIntentId: string): Promise<Order | null> {
+    return db.transaction(async (tx) => {
+      // 1. Get user and cart items within the transaction to ensure data consistency
+      const user = await tx.select().from(users).where(eq(users.id, userId)).then(res => res[0]);
+      // Join cartItems with products to get price
+      const cartRows = await tx.select()
+        .from(cartItems)
+        .where(eq(cartItems.userId, userId))
+        .leftJoin(products, eq(cartItems.productId, products.id));
+
+      // Filter out cart items with missing product (shouldn't happen, but safe)
+      const currentCartItems = cartRows.filter(row => row.products).map(row => ({
+        ...row.cart_items,
+        product: row.products!
+      }));
+
+      if (currentCartItems.length === 0) {
+        // If cart is empty, rollback transaction by returning null
+        return null;
+      }
+
+      // 2. Calculate total and prepare order data
+      const total = currentCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+      const orderData: InsertOrder = {
+        userId,
+        total,
+        status: 'processing', // Default status after payment
+        address: user?.address || 'Address not provided',
+        paymentIntentId, // Store the payment ID for reference
+      };
+
+      // 3. Create the order
+      const [newOrder] = await tx.insert(orders).values(orderData).returning();
+
+      // 4. Prepare order items from the cart items
+      const newOrderItems = currentCartItems.map(item => ({
+        orderId: newOrder.id,
+        productId: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price,
+        variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` as any : null,
+      }));
+
+      // 5. Insert all the new order items
+      if (newOrderItems.length > 0) {
+        await tx.insert(orderItems).values(newOrderItems);
+      }
+
+      // 6. Clear the user's cart now that the order is created
+      await tx.delete(cartItems).where(eq(cartItems.userId, userId));
+
+      // 7. Return the completed order
+      return newOrder;
+    });
+  }
 }

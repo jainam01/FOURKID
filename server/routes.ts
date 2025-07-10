@@ -15,6 +15,7 @@ import nodemailer from "nodemailer";
 import cors from 'cors';
 import connectPgSimple from 'connect-pg-simple';
 import { Pool } from 'pg';
+import Stripe from 'stripe';
 
 
 const storage = new DbStorage();
@@ -27,7 +28,9 @@ const sessionPool = new Pool({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add these middleware at the very top
-
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-06-30.basil',
+  });
   
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
@@ -169,6 +172,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     res.status(403).json({ message: "Forbidden: Admin access required" });
   };
+
+
+  app.post("/api/create-payment-intent", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const cartItems = await storage.getUserCartItems(userId);
+      if (cartItems.length === 0) {
+        return res.status(400).json({ error: { message: "Your cart is empty." } });
+      }
+      // Use item.product.price
+      const totalAmount = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const amountInPaise = Math.round(totalAmount * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amountInPaise,
+        currency: "inr",
+        metadata: { userId: userId },
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+
+    } catch (error: any) {
+      console.error("Stripe Error:", error);
+      res.status(500).json({ error: { message: "Failed to create payment intent." } });
+    }
+  });
 
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
@@ -652,19 +683,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", isAuthenticated, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const { items, ...orderData } = req.body;
-      
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: "Order must have at least one item" });
+      const { paymentIntentId } = req.body;
+
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "Payment Intent ID is required." });
       }
-      
-      const parsedOrderData = insertOrderSchema.parse({ ...orderData, userId });
-      
-      // Create the order
-      const order = await storage.createOrder(parsedOrderData, items);
+
+      const order = await storage.createOrderFromCart(userId, paymentIntentId);
+
+      if (!order) {
+        return res.status(400).json({ message: "Could not create order. Cart might be empty." });
+      }
+
       res.status(201).json(order);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid order data", error: (error as Error).message });
+
+    } catch (error: any) {
+      console.error("Order creation error:", error);
+      res.status(500).json({ message: "Failed to create order", error: error.message });
     }
   });
 

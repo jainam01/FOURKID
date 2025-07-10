@@ -54,10 +54,13 @@ export const orders = pgTable("orders", {
   status: text("status").default("pending").notNull(),
   total: doublePrecision("total").notNull(),
   address: text("address").notNull(),
+  paymentIntentId: text("payment_intent_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true }).extend({
+  paymentIntentId: z.string().optional(),
+});
 
 // Order Item model
 export const orderItems = pgTable("order_items", {
@@ -159,6 +162,7 @@ export interface ProductWithDetails extends Product {
 }
 
 export interface CartItemWithProduct extends CartItem {
+  [x: string]: number;
   product: Product;
 }
 
@@ -194,4 +198,8 @@ export const loginSchema = z.object({
 });
 
 export type LoginCredentials = z.infer<typeof loginSchema>;
+
+export const createOrderInputSchema = z.object({
+  paymentIntentId: z.string(),
+});
 
