@@ -871,6 +871,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =================================================================
+  // =============== NEW USER PROFILE UPDATE ROUTE START ===============
+  // =================================================================
+  app.put("/api/users/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userIdToUpdate = Number(req.params.id);
+      const loggedInUserId = (req.user as any).id;
+      const userRole = (req.user as any).role;
+  
+      // Authorization: User can update their own profile, or an admin can update any profile.
+      if (loggedInUserId !== userIdToUpdate && userRole !== 'admin') {
+        return res.status(403).json({ message: "Forbidden: You can only update your own profile." });
+      }
+  
+      // Define a schema for updatable fields.
+      // `partial()` makes all fields optional, so the frontend only needs to send what changed.
+      const updateUserProfileSchema = z.object({
+        name: z.string(),
+        businessName: z.string(),
+        phoneNumber: z.string(),
+        address: z.string(),
+        gstin: z.string().nullable(), // Allow GSTIN to be null or a string
+      }).partial();
+  
+      const userDataToUpdate = updateUserProfileSchema.parse(req.body);
+  
+      // Ensure we don't try to update with an empty object
+      if (Object.keys(userDataToUpdate).length === 0) {
+        return res.status(400).json({ message: "No update data provided." });
+      }
+  
+      const updatedUser = await storage.updateUser(userIdToUpdate, userDataToUpdate);
+  
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found or update failed." });
+      }
+  
+      // Return the updated user, excluding the password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+  
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data provided.", errors: error.flatten() });
+      }
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "An internal server error occurred.", error: (error as Error).message });
+    }
+  });
+  // =================================================================
+  // ================ NEW USER PROFILE UPDATE ROUTE END ================
+  // =================================================================
+
+
   app.post("/api/wholesale-application",isAuthenticated, async (req, res) => {
     console.log('Received wholesale application request');
     console.log('Request body:', req.body);

@@ -148,6 +148,7 @@ export type InsertReview = z.infer<typeof insertReviewSchema>;
 
 // Additional types
 export interface ProductVariant {
+  map(arg0: (v: any) => string): unknown;
   name: string; // e.g., "Size", "Color"
   value: string; // e.g., "XL", "Red"
 }

@@ -2,7 +2,7 @@
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { eq, and, desc, sql } from 'drizzle-orm'; // Added 'desc'
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import {
   users, User, InsertUser,
   categories, Category, InsertCategory,
@@ -12,22 +12,17 @@ import {
   cartItems, CartItem, InsertCartItem,
   watchlistItems, WatchlistItem, InsertWatchlistItem,
   banners, Banner, InsertBanner,
-  reviews, InsertReview, AdminReview, Review, // Added review imports
+  reviews, InsertReview, AdminReview, Review,
   ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
   ProductVariant
 } from '@shared/schema';
 import { IStorage } from './storage';
 import bcrypt from 'bcrypt';
 
-// if (!process.env.DATABASE_URL) {
-//   throw new Error('DATABASE_URL environment variable is required');
-// }
-
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 });
 
-// Test the connection
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
   process.exit(-1);
@@ -61,18 +56,14 @@ export class DbStorage implements IStorage {
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    // Hash password before creating user
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     const result = await db.insert(users).values({ ...userData, password: hashedPassword }).returning();
     return result[0];
   }
 
-  // --- UPDATED METHOD ---
-  // This method now correctly handles password updates by checking if a new password is provided.
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
     const updateData: Partial<InsertUser> = { ...userData };
 
-    // Only hash and update the password if it's actually provided in the userData
     if (userData.password) {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       updateData.password = hashedPassword;
@@ -125,14 +116,39 @@ export class DbStorage implements IStorage {
   }
 
   async getProductsWithDetails(): Promise<ProductWithDetails[]> {
-    const productList = await db.select().from(products);
-    const categoryList = await db.select().from(categories);
-
-    return productList.map(product => ({
-      ...product,
-      category: categoryList.find(cat => cat.id === product.categoryId)!
-    }));
+    const result = await db
+      .select()
+      .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id));
+    
+    // Use a type predicate in the filter to correctly inform TypeScript
+    return result
+      .filter((row): row is { products: Product; categories: Category } => row.categories !== null)
+      .map(row => ({
+        ...row.products,
+        category: row.categories
+      }));
   }
+  
+  async getProductWithDetails(id: number): Promise<ProductWithDetails | undefined> {
+    const result = await db.select()
+      .from(products)
+      .where(eq(products.id, id))
+      .leftJoin(categories, eq(products.categoryId, categories.id));
+    
+    const row = result[0];
+    // This check safely handles both no product found and product with no category
+    if (!row || !row.categories) {
+      return undefined;
+    }
+
+
+    return {
+      ...row.products,
+      category: row.categories
+    };
+  }
+
 
   async getProductsByCategory(categoryId: number): Promise<Product[]> {
     return await db.select().from(products).where(eq(products.categoryId, categoryId));
@@ -152,19 +168,6 @@ export class DbStorage implements IStorage {
   async getProduct(id: number): Promise<Product | undefined> {
     const result = await db.select().from(products).where(eq(products.id, id));
     return result[0];
-  }
-
-  async getProductWithDetails(id: number): Promise<ProductWithDetails | undefined> {
-    const product = await this.getProduct(id);
-    if (!product) return undefined;
-
-    const category = await this.getCategory(product.categoryId);
-    if (!category) return undefined;
-
-    return {
-      ...product,
-      category
-    };
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
@@ -195,13 +198,17 @@ export class DbStorage implements IStorage {
 
   // Cart operations
   async getUserCartItems(userId: number): Promise<CartItemWithProduct[]> {
-    const cartItemList = await db.select().from(cartItems).where(eq(cartItems.userId, userId));
-    const productList = await db.select().from(products);
-
-    return cartItemList.map(item => ({
-      ...item,
-      product: productList.find(p => p.id === item.productId)!
-    }));
+    const result = await db.select()
+      .from(cartItems)
+      .where(eq(cartItems.userId, userId))
+      .leftJoin(products, eq(cartItems.productId, products.id));
+    
+    return result
+      .filter(row => row.products) 
+      .map(row => ({
+        ...row.cart_items,
+        product: row.products!
+      }));
   }
 
   async getCartItem(id: number): Promise<CartItem | undefined> {
@@ -261,13 +268,17 @@ export class DbStorage implements IStorage {
 
   // Watchlist operations
   async getUserWatchlistItems(userId: number): Promise<WatchlistItemWithProduct[]> {
-    const watchlistItemList = await db.select().from(watchlistItems).where(eq(watchlistItems.userId, userId));
-    const productList = await db.select().from(products);
+    const result = await db.select()
+      .from(watchlistItems)
+      .where(eq(watchlistItems.userId, userId))
+      .leftJoin(products, eq(watchlistItems.productId, products.id));
 
-    return watchlistItemList.map(item => ({
-      ...item,
-      product: productList.find(p => p.id === item.productId)!
-    }));
+    return result
+      .filter(row => row.products) // Filter out items where product was deleted
+      .map(row => ({
+        ...row.watchlist_items,
+        product: row.products!
+      }));
   }
 
   async addToWatchlist(itemData: InsertWatchlistItem): Promise<WatchlistItem> {
@@ -328,21 +339,31 @@ export class DbStorage implements IStorage {
   }
 
   async getOrdersWithItems(): Promise<OrderWithItems[]> {
-    const orderList = await db.select().from(orders);
-    const orderItemList = await db.select().from(orderItems);
-    const productList = await db.select().from(products);
+    const orderList = await db.select().from(orders).orderBy(desc(orders.createdAt));
+    if (orderList.length === 0) return [];
+
+    const orderIds = orderList.map(o => o.id);
+    const itemsWithProducts = await db.select()
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIds))
+      .leftJoin(products, eq(orderItems.productId, products.id));
+
     const userList = await db.select().from(users);
 
-    return orderList.map(order => ({
-      ...order,
-      items: orderItemList
-        .filter(item => item.orderId === order.id)
-        .map(item => ({
-          ...item,
-          product: productList.find(p => p.id === item.productId)!
-        })),
-      user: userList.find(u => u.id === order.userId)
-    }));
+    return orderList.map(order => {
+      const relatedItems = itemsWithProducts
+        .filter(i => i.order_items.orderId === order.id && i.products) // Filter for matching order and ensure product exists
+        .map(i => ({
+          ...i.order_items,
+          product: i.products!
+        }));
+
+      return {
+        ...order,
+        items: relatedItems,
+        user: userList.find(u => u.id === order.userId)
+      };
+    });
   }
 
   async getUserOrders(userId: number): Promise<Order[]> {
@@ -350,19 +371,28 @@ export class DbStorage implements IStorage {
   }
 
   async getUserOrdersWithItems(userId: number): Promise<OrderWithItems[]> {
-    const orderList = await this.getUserOrders(userId);
-    const orderItemList = await db.select().from(orderItems);
-    const productList = await db.select().from(products);
-
-    return orderList.map(order => ({
-      ...order,
-      items: orderItemList
-        .filter(item => item.orderId === order.id)
-        .map(item => ({
-          ...item,
-          product: productList.find(p => p.id === item.productId)!
-        }))
-    }));
+    const orderList = await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
+    if (orderList.length === 0) return [];
+    
+    const orderIds = orderList.map(o => o.id);
+    const itemsWithProducts = await db.select()
+      .from(orderItems)
+      .where(inArray(orderItems.orderId, orderIds))
+      .leftJoin(products, eq(orderItems.productId, products.id));
+      
+    return orderList.map(order => {
+      const relatedItems = itemsWithProducts
+        .filter(i => i.order_items.orderId === order.id && i.products) // Filter for matching order and ensure product exists
+        .map(i => ({
+          ...i.order_items,
+          product: i.products!
+        }));
+        
+      return {
+        ...order,
+        items: relatedItems,
+      };
+    });
   }
 
   async getOrder(id: number): Promise<Order | undefined> {
@@ -371,38 +401,46 @@ export class DbStorage implements IStorage {
   }
 
   async getOrderWithItems(id: number): Promise<OrderWithItems | undefined> {
-    const order = await this.getOrder(id);
-    if (!order) return undefined;
+    const orderResult = await db.select().from(orders).where(eq(orders.id, id));
+    if (orderResult.length === 0) return undefined;
+    const order = orderResult[0];
 
-    const orderItemList = await db.select().from(orderItems).where(eq(orderItems.orderId, id));
-    const productList = await db.select().from(products);
+    const itemsWithProducts = await db.select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, id))
+      .leftJoin(products, eq(orderItems.productId, products.id));
+      
     const user = await this.getUser(order.userId);
+    
+    const relatedItems = itemsWithProducts
+      .filter(i => i.products) // Ensure product exists
+      .map(i => ({
+        ...i.order_items,
+        product: i.products!
+      }));
 
     return {
       ...order,
-      items: orderItemList.map(item => ({
-        ...item,
-        product: productList.find(p => p.id === item.productId)!
-      })),
+      items: relatedItems,
       user
     };
   }
-
-  async createOrder(orderData: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
-    const result = await db.transaction(async (tx) => {
+  
+  async createOrder(orderData: InsertOrder, items: Omit<InsertOrderItem, 'orderId'>[]): Promise<Order> {
+    return await db.transaction(async (tx) => {
       const [order] = await tx.insert(orders).values(orderData).returning();
 
-      await tx.insert(orderItems).values(
-        items.map(item => ({
+      if (items.length > 0) {
+        const itemsToInsert = items.map(item => ({
           ...item,
-          orderId: order.id
-        }))
-      );
-
+          orderId: order.id,
+          variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` : null
+        }));
+        await tx.insert(orderItems).values(itemsToInsert as any);
+      }
+      
       return order;
     });
-
-    return result;
   }
 
   async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
@@ -414,7 +452,6 @@ export class DbStorage implements IStorage {
   }
 
   // --- REVIEW OPERATIONS ---
-
   async createReview(data: InsertReview): Promise<any> {
     const [newReview] = await db.insert(reviews).values(data).returning();
     return newReview;
@@ -443,7 +480,6 @@ export class DbStorage implements IStorage {
       .leftJoin(products, eq(reviews.productId, products.id))
       .orderBy(desc(reviews.createdAt));
 
-    // The type assertion is safe because of the select statement structure.
     return result as unknown as AdminReview[];
   }
 
@@ -462,11 +498,10 @@ export class DbStorage implements IStorage {
       .leftJoin(users, eq(reviews.userId, users.id))
       .where(and(
         eq(reviews.productId, productId),
-        eq(reviews.status, 'approved') // Only get 'approved' reviews
+        eq(reviews.status, 'approved')
       ))
-      .orderBy(desc(reviews.createdAt)); // Show newest reviews first
+      .orderBy(desc(reviews.createdAt));
 
-    // Map user: null to user: undefined for type compatibility
     return result.map(r => ({ ...r, user: r.user === null ? undefined : r.user }));
   }
 
