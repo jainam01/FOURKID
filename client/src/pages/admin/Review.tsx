@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, Loader2, MoreHorizontal, AlertTriangle, Trash2, Star } from "lucide-react";
+import { CheckCircle, Loader2, MoreHorizontal, AlertTriangle, Trash2, Star, UserX, PackageX } from "lucide-react"; // Added UserX and PackageX
 
 // A small helper component for the rating badge
 const RatingBadge = ({ rating }: { rating: number }) => (
@@ -87,7 +87,7 @@ const AdminReviewsPage = () => {
           </div>
         ) : (
           <>
-            {/* DESKTOP VIEW: TABLE (hidden on small screens) */}
+            {/* --- DESKTOP VIEW: TABLE --- */}
             <div className="hidden md:block">
               <Table>
                 <TableHeader>
@@ -104,10 +104,26 @@ const AdminReviewsPage = () => {
                 <TableBody>
                   {reviews.map((review) => (
                     <TableRow key={review.id}>
-                      <TableCell className="font-medium">{review.product.name}</TableCell>
+                      {/* --- FIX 1: Check if product exists --- */}
+                      <TableCell className="font-medium">
+                        {review.product?.name ?? (
+                            <span className="text-muted-foreground italic flex items-center">
+                                <PackageX className="h-4 w-4 mr-2" /> Deleted Product
+                            </span>
+                        )}
+                      </TableCell>
+                      {/* --- FIX 2: Check if user exists --- */}
                       <TableCell>
-                        <div>{review.user.name}</div>
-                        <div className="text-xs text-muted-foreground">{review.user.email}</div>
+                        {review.user ? (
+                          <>
+                            <div>{review.user.name}</div>
+                            <div className="text-xs text-muted-foreground">{review.user.email}</div>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic flex items-center">
+                            <UserX className="h-4 w-4 mr-2" /> Deleted User
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell><RatingBadge rating={review.rating} /></TableCell>
                       <TableCell className="max-w-xs truncate" title={review.comment}>{review.comment}</TableCell>
@@ -122,15 +138,20 @@ const AdminReviewsPage = () => {
               </Table>
             </div>
             
-            {/* MOBILE VIEW: CARD LIST (only shows on small screens) */}
+            {/* --- MOBILE VIEW: CARD LIST --- */}
             <div className="space-y-4 md:hidden">
               {reviews.map((review) => (
                 <Card key={review.id} className="w-full">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-base">{review.product.name}</CardTitle>
-                        <CardDescription>by {review.user.name}</CardDescription>
+                        {/* --- FIX 3: Check product and user on mobile view --- */}
+                        <CardTitle className="text-base">
+                          {review.product?.name ?? "Deleted Product"}
+                        </CardTitle>
+                        <CardDescription>
+                          by {review.user?.name ?? "Deleted User"}
+                        </CardDescription>
                       </div>
                       <ReviewActions review={review} onApprove={handleApproveReview} onDelete={handleDeleteReview} />
                     </div>
@@ -156,7 +177,7 @@ const AdminReviewsPage = () => {
   );
 };
 
-// Extracted Actions Dropdown for reusability between mobile and desktop views
+// Extracted Actions Dropdown for reusability
 const ReviewActions = ({ review, onApprove, onDelete }: { review: AdminReview, onApprove: (id: number) => void, onDelete: (id: number) => void }) => {
   const approveReviewMutation = useApproveReview();
   const deleteReviewMutation = useDeleteReview();

@@ -1,68 +1,127 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// File: server/src/index.ts
+
+import 'dotenv/config';
+import express, { Request, Response, NextFunction } from "express";
+import { createServer } from "http";
+import session from "express-session";
+import passport from "passport";
+import cors from 'cors';
+import connectPgSimple from 'connect-pg-simple';
+import { Pool } from 'pg';
+import nodemailer from 'nodemailer'; // <-- Import nodemailer here
+
+import { registerRoutes } from './routes';
+import { DbStorage } from './db-storage';
+import { setupVite, serveStatic, log } from "./vite"; // Assuming you have this file
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+const PgStore = connectPgSimple(session);
+const storage = new DbStorage();
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+async function startServer() {
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+    // --- DEFINE TRANSPORTER HERE ---
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+    });
 
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+    transporter.verify(function(error) {
+        if (error) console.log('SMTP connection error:', error);
+        else console.log('SMTP server is ready to send messages');
+    });
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
+    // --- MIDDLEWARE SETUP ---
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
 
-      log(logLine);
+    if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+
+    app.use(cors({
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        credentials: true
+    }));
+
+    const sessionPool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+    });
+
+    app.use(session({
+        store: new PgStore({ pool: sessionPool, tableName: 'user_sessions' }),
+        secret: process.env.SESSION_SECRET || "a-very-strong-secret-in-development",
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000
+        }
+    }));
+
+    app.use(passport.initialize());
+    app.use(passport.session());
+
+    app.use((req, res, next) => {
+        const start = Date.now();
+        res.on("finish", () => {
+            if (req.path.startsWith("/api")) {
+                log(`${req.method} ${req.path} ${res.statusCode} in ${Date.now() - start}ms`);
+            }
+        });
+        next();
+    });
+
+    // --- ADMIN CREATION ---
+    try {
+        if (!await storage.getUserByEmail('admin@fourkids.com')) {
+            await storage.createUser({
+                email: 'admin@fourkids.com',
+                password: 'admin@123',
+                name: 'Admin User',
+                businessName: 'FourKids Admin',
+                phoneNumber: '1234567890',
+                address: 'Admin Address',
+                role: 'admin'
+            });
+            console.log('Admin user created successfully.');
+        }
+    } catch (error) {
+        console.error('Error during admin user creation:', error);
     }
-  });
+    
+    // --- REGISTER ROUTES ---
+    // Pass the transporter into the function
+    registerRoutes(app, transporter);
+    
+    const httpServer = createServer(app);
 
-  next();
-});
+    // --- VITE/STATIC & ERROR HANDLING ---
+    if (app.get("env") === "development") {
+        await setupVite(app, httpServer);
+    } else {
+        serveStatic(app);
+    }
 
-(async () => {
-  const server = await registerRoutes(app);
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+        const status = err.status || 500;
+        const message = err.message || "Internal Server Error";
+        res.status(status).json({ message });
+        console.error(err);
+    });
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    console.error(err);
-  });
+    // --- START SERVER ---
+    const port = 3000;
+    httpServer.listen({ port, host: "0.0.0.0" }, () => {
+        log(`Server is listening on port ${port}`);
+    });
+}
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on port 3000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 3000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-  }, () => {
-    log(`serving on port ${port}`);
-  });
-})();
+startServer();

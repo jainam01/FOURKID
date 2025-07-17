@@ -1,9 +1,19 @@
 // File: shared/schema.ts
 
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, doublePrecision, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { ReactNode } from "react";
 import { z } from "zod";
+
+
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value"),
+});
+
+const phoneRegex = new RegExp(
+  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
+);
 
 // User model
 export const users = pgTable("users", {
@@ -17,7 +27,20 @@ export const users = pgTable("users", {
   address: text("address").notNull(),
   role: text("role").default("user").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  passwordResetToken: text("password_reset_token").unique(),
+  passwordResetTokenExpires: timestamp("password_reset_token_expires"),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+});
+export type ForgotPasswordCredentials = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, { message: "Token is required." }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+});
+export type ResetPasswordCredentials = z.infer<typeof resetPasswordSchema>;
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
@@ -51,16 +74,14 @@ export const insertProductSchema = createInsertSchema(products).omit({ id: true,
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  status: text("status").default("pending").notNull(),
+  status: text("status").default("pending payment").notNull(),
   total: doublePrecision("total").notNull(),
   address: text("address").notNull(),
-  paymentIntentId: text("payment_intent_id"),
+  paymentMethod: text("payment_method"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true }).extend({
-  paymentIntentId: z.string().optional(),
-});
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 
 // Order Item model
 export const orderItems = pgTable("order_items", {
@@ -69,7 +90,7 @@ export const orderItems = pgTable("order_items", {
   productId: integer("product_id").notNull(),
   quantity: integer("quantity").notNull(),
   price: doublePrecision("price").notNull(),
-  variantInfo: jsonb("variant_info").$type<ProductVariant>(),
+  variantInfo: jsonb("variant_info").$type<ProductVariant[] | null>(),
 });
 
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, orderId: true });
@@ -99,7 +120,8 @@ export const banners = pgTable("banners", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  image: text("image").notNull(),
+  desktopImage: text("desktop_image").notNull(),
+  mobileImage: text("mobile_image").notNull(),
   link: text("link"),
   type: text("type").notNull(), // hero, promotion, etc.
   active: boolean("active").default(true).notNull(),
@@ -162,8 +184,7 @@ export interface ProductWithDetails extends Product {
 }
 
 export interface CartItemWithProduct extends CartItem {
-  [x: string]: number;
-  product: Product;
+ product: Product;
 }
 
 export interface WatchlistItemWithProduct extends WatchlistItem {
@@ -191,13 +212,28 @@ export interface AdminReview {
   product: Pick<Product, 'id' | 'name'>;
 }
 
-// Login schema
-export const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+export const userSessions = pgTable("user_sessions", {
+  sid: text("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { mode: 'date' }).notNull(),
 });
 
+// Login schema
+export const loginSchema = z.object({
+  // We rename 'email' to 'identifier' to be more generic
+  identifier: z.string().min(3, { message: "Email or Phone Number is required." }),
+  password: z.string().min(1, { message: "Password is required." }),
+});
 export type LoginCredentials = z.infer<typeof loginSchema>;
+
+// Register Schema
+export const registerSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().regex(phoneRegex, { message: "Invalid phone number" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+});
+export type RegisterCredentials = z.infer<typeof registerSchema>;
 
 export const createOrderInputSchema = z.object({
   paymentIntentId: z.string(),

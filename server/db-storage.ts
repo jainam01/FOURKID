@@ -1,20 +1,20 @@
 // File: server/src/db-storage.ts
 
+
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { eq, and, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, sql, inArray, or } from 'drizzle-orm'; // <-- Added 'or'
 import {
   users, User, InsertUser,
   categories, Category, InsertCategory,
   products, Product, InsertProduct,
   orders, Order, InsertOrder,
-  orderItems, OrderItem, InsertOrderItem,
+  orderItems, InsertOrderItem,
   cartItems, CartItem, InsertCartItem,
   watchlistItems, WatchlistItem, InsertWatchlistItem,
   banners, Banner, InsertBanner,
-  reviews, InsertReview, AdminReview, Review,
-  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems,
-  ProductVariant
+  reviews, InsertReview, AdminReview, Review, appSettings,
+  ProductWithDetails, CartItemWithProduct, WatchlistItemWithProduct, OrderWithItems
 } from '@shared/schema';
 import { IStorage } from './storage';
 import bcrypt from 'bcrypt';
@@ -40,7 +40,10 @@ pool.connect((err, client, done) => {
 const db = drizzle(pool);
 
 export class DbStorage implements IStorage {
-  // User operations
+  getProduct(id: number): Promise<Product | undefined> {
+    throw new Error('Method not implemented.');
+  }
+  // --- USER & AUTH METHODS (UPDATED SECTION) ---
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
@@ -52,6 +55,31 @@ export class DbStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0];
+  }
+
+  // --- NEW METHOD ---
+  // Finds a user by either their email or phone number.
+  async getUserByIdentifier(identifier: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(
+      or(
+        eq(users.email, identifier),
+        eq(users.phoneNumber, identifier)
+      )
+    );
+    return result[0];
+  }
+  
+  // --- NEW METHOD ---
+  // Finds a user by their password reset token.
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(
+        and(
+            eq(users.passwordResetToken, token),
+            // Ensure the token has not expired
+            sql`${users.passwordResetTokenExpires} > NOW()` 
+        )
+    );
     return result[0];
   }
 
@@ -77,7 +105,50 @@ export class DbStorage implements IStorage {
     return result[0];
   }
   
-  // Category operations
+  // --- UPDATED LOGIN METHOD ---
+  async login(identifier: string, password: string): Promise<User | undefined> {
+    // Use the new flexible method to find the user
+    const user = await this.getUserByIdentifier(identifier);
+    if (!user) return undefined;
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return undefined;
+    }
+
+    return user;
+  }
+
+  // --- ALL OTHER METHODS BELOW THIS LINE ARE PRESERVED ---
+  
+  async getOrders(): Promise<Order[]> {
+    return await db.select().from(orders);
+  }
+  
+  async getUserOrders(userId: number): Promise<Order[]> {
+    return await db.select().from(orders).where(eq(orders.userId, userId));
+  }
+  
+  async getOrder(id: number): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id));
+    return result[0];
+  }
+  
+  async createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
+    const result = await db.insert(orders).values(order).returning();
+    const createdOrder = result[0];
+    
+    for (const item of items) {
+      await db.insert(orderItems).values({
+        ...item,
+        orderId: createdOrder.id,
+        variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` : null
+      });
+    }
+    
+    return createdOrder;
+  }
+  
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories);
   }
@@ -110,7 +181,6 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Product operations
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);
   }
@@ -121,7 +191,6 @@ export class DbStorage implements IStorage {
       .from(products)
       .leftJoin(categories, eq(products.categoryId, categories.id));
     
-    // Use a type predicate in the filter to correctly inform TypeScript
     return result
       .filter((row): row is { products: Product; categories: Category } => row.categories !== null)
       .map(row => ({
@@ -137,18 +206,15 @@ export class DbStorage implements IStorage {
       .leftJoin(categories, eq(products.categoryId, categories.id));
     
     const row = result[0];
-    // This check safely handles both no product found and product with no category
     if (!row || !row.categories) {
       return undefined;
     }
-
 
     return {
       ...row.products,
       category: row.categories
     };
   }
-
 
   async getProductsByCategory(categoryId: number): Promise<Product[]> {
     return await db.select().from(products).where(eq(products.categoryId, categoryId));
@@ -163,11 +229,6 @@ export class DbStorage implements IStorage {
       ...product,
       category
     }));
-  }
-
-  async getProduct(id: number): Promise<Product | undefined> {
-    const result = await db.select().from(products).where(eq(products.id, id));
-    return result[0];
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
@@ -196,7 +257,6 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Cart operations
   async getUserCartItems(userId: number): Promise<CartItemWithProduct[]> {
     const result = await db.select()
       .from(cartItems)
@@ -266,7 +326,6 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Watchlist operations
   async getUserWatchlistItems(userId: number): Promise<WatchlistItemWithProduct[]> {
     const result = await db.select()
       .from(watchlistItems)
@@ -274,7 +333,7 @@ export class DbStorage implements IStorage {
       .leftJoin(products, eq(watchlistItems.productId, products.id));
 
     return result
-      .filter(row => row.products) // Filter out items where product was deleted
+      .filter(row => row.products)
       .map(row => ({
         ...row.watchlist_items,
         product: row.products!
@@ -301,7 +360,6 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Banner operations
   async getBanners(): Promise<Banner[]> {
     return await db.select().from(banners);
   }
@@ -333,11 +391,6 @@ export class DbStorage implements IStorage {
     return result.length > 0;
   }
 
-  // Order operations
-  async getOrders(): Promise<Order[]> {
-    return await db.select().from(orders);
-  }
-
   async getOrdersWithItems(): Promise<OrderWithItems[]> {
     const orderList = await db.select().from(orders).orderBy(desc(orders.createdAt));
     if (orderList.length === 0) return [];
@@ -352,7 +405,7 @@ export class DbStorage implements IStorage {
 
     return orderList.map(order => {
       const relatedItems = itemsWithProducts
-        .filter(i => i.order_items.orderId === order.id && i.products) // Filter for matching order and ensure product exists
+        .filter(i => i.order_items.orderId === order.id && i.products)
         .map(i => ({
           ...i.order_items,
           product: i.products!
@@ -364,10 +417,6 @@ export class DbStorage implements IStorage {
         user: userList.find(u => u.id === order.userId)
       };
     });
-  }
-
-  async getUserOrders(userId: number): Promise<Order[]> {
-    return await db.select().from(orders).where(eq(orders.userId, userId));
   }
 
   async getUserOrdersWithItems(userId: number): Promise<OrderWithItems[]> {
@@ -382,7 +431,7 @@ export class DbStorage implements IStorage {
       
     return orderList.map(order => {
       const relatedItems = itemsWithProducts
-        .filter(i => i.order_items.orderId === order.id && i.products) // Filter for matching order and ensure product exists
+        .filter(i => i.order_items.orderId === order.id && i.products)
         .map(i => ({
           ...i.order_items,
           product: i.products!
@@ -393,11 +442,6 @@ export class DbStorage implements IStorage {
         items: relatedItems,
       };
     });
-  }
-
-  async getOrder(id: number): Promise<Order | undefined> {
-    const result = await db.select().from(orders).where(eq(orders.id, id));
-    return result[0];
   }
 
   async getOrderWithItems(id: number): Promise<OrderWithItems | undefined> {
@@ -413,7 +457,7 @@ export class DbStorage implements IStorage {
     const user = await this.getUser(order.userId);
     
     const relatedItems = itemsWithProducts
-      .filter(i => i.products) // Ensure product exists
+      .filter(i => i.products)
       .map(i => ({
         ...i.order_items,
         product: i.products!
@@ -425,23 +469,6 @@ export class DbStorage implements IStorage {
       user
     };
   }
-  
-  async createOrder(orderData: InsertOrder, items: Omit<InsertOrderItem, 'orderId'>[]): Promise<Order> {
-    return await db.transaction(async (tx) => {
-      const [order] = await tx.insert(orders).values(orderData).returning();
-
-      if (items.length > 0) {
-        const itemsToInsert = items.map(item => ({
-          ...item,
-          orderId: order.id,
-          variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` : null
-        }));
-        await tx.insert(orderItems).values(itemsToInsert as any);
-      }
-      
-      return order;
-    });
-  }
 
   async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
     const result = await db.update(orders)
@@ -451,7 +478,18 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  // --- REVIEW OPERATIONS ---
+  async getUpiSettings(): Promise<{ upiId: string; qrCodeUrl: string }> {
+    const result = await db.select().from(appSettings).where(eq(appSettings.key, 'upiDetails'));
+    return (result[0]?.value as any) || { upiId: '', qrCodeUrl: '' };
+  }
+
+  async updateUpiSettings(details: { upiId: string; qrCodeUrl: string }): Promise<any> {
+    return await db.insert(appSettings)
+      .values({ key: 'upiDetails', value: details })
+      .onConflictDoUpdate({ target: appSettings.key, set: { value: details } })
+      .returning();
+  }
+
   async createReview(data: InsertReview): Promise<any> {
     const [newReview] = await db.insert(reviews).values(data).returning();
     return newReview;
@@ -465,15 +503,8 @@ export class DbStorage implements IStorage {
         comment: reviews.comment,
         createdAt: reviews.createdAt,
         status: reviews.status,
-        user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-        },
-        product: {
-          id: products.id,
-          name: products.name,
-        },
+        user: { id: users.id, name: users.name, email: users.email },
+        product: { id: products.id, name: products.name },
       })
       .from(reviews)
       .leftJoin(users, eq(reviews.userId, users.id))
@@ -490,16 +521,11 @@ export class DbStorage implements IStorage {
         rating: reviews.rating,
         comment: reviews.comment,
         createdAt: reviews.createdAt,
-        user: {
-          name: users.name,
-        },
+        user: { name: users.name },
       })
       .from(reviews)
       .leftJoin(users, eq(reviews.userId, users.id))
-      .where(and(
-        eq(reviews.productId, productId),
-        eq(reviews.status, 'approved')
-      ))
+      .where(and(eq(reviews.productId, productId), eq(reviews.status, 'approved')))
       .orderBy(desc(reviews.createdAt));
 
     return result.map(r => ({ ...r, user: r.user === null ? undefined : r.user }));
@@ -518,77 +544,39 @@ export class DbStorage implements IStorage {
     const result = await db.delete(reviews).where(eq(reviews.id, id)).returning();
     return result.length > 0;
   }
-
-  async login(email: string, password: string): Promise<User | undefined> {
-    const user = await this.getUserByEmail(email);
-    if (!user) return undefined;
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return undefined;
-    }
-
-    return user;
-  }
-
-  // =================================================================
-  // ===================== NEW/MODIFIED ORDER LOGIC ==================
-  // =================================================================
-
-  // NEW method to create an order directly from the user's cart in a safe transaction.
-  async createOrderFromCart(userId: number, paymentIntentId: string): Promise<Order | null> {
+  
+  async createOrderFromCart(userId: number): Promise<Order | null> {
     return db.transaction(async (tx) => {
-      // 1. Get user and cart items within the transaction to ensure data consistency
       const user = await tx.select().from(users).where(eq(users.id, userId)).then(res => res[0]);
-      // Join cartItems with products to get price
-      const cartRows = await tx.select()
-        .from(cartItems)
-        .where(eq(cartItems.userId, userId))
-        .leftJoin(products, eq(cartItems.productId, products.id));
+      const cartItemsWithProducts = await this.getUserCartItems(userId);
+      
+      if (cartItemsWithProducts.length === 0) return null;
 
-      // Filter out cart items with missing product (shouldn't happen, but safe)
-      const currentCartItems = cartRows.filter(row => row.products).map(row => ({
-        ...row.cart_items,
-        product: row.products!
-      }));
-
-      if (currentCartItems.length === 0) {
-        // If cart is empty, rollback transaction by returning null
-        return null;
-      }
-
-      // 2. Calculate total and prepare order data
-      const total = currentCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-
+      const subtotal = cartItemsWithProducts.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const shippingCost = user?.address?.toLowerCase().includes('ahmedabad') ? 0 : 100;
+      const tax = subtotal * 0.18;
+      const finalTotal = subtotal + tax + shippingCost;
+      
       const orderData: InsertOrder = {
         userId,
-        total,
-        status: 'processing', // Default status after payment
+        total: finalTotal,
+        status: 'pending payment',
+        paymentMethod: 'manual_upi',
         address: user?.address || 'Address not provided',
-        paymentIntentId, // Store the payment ID for reference
       };
-
-      // 3. Create the order
+  
       const [newOrder] = await tx.insert(orders).values(orderData).returning();
-
-      // 4. Prepare order items from the cart items
-      const newOrderItems = currentCartItems.map(item => ({
-        orderId: newOrder.id,
-        productId: item.product.id,
-        quantity: item.quantity,
-        price: item.product.price,
-        variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` as any : null,
-      }));
-
-      // 5. Insert all the new order items
-      if (newOrderItems.length > 0) {
-        await tx.insert(orderItems).values(newOrderItems);
+  
+      for (const item of cartItemsWithProducts) {
+        await tx.insert(orderItems).values({
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.product.price,
+          variantInfo: item.variantInfo ? sql`${JSON.stringify(item.variantInfo)}::jsonb` : null
+        });
       }
-
-      // 6. Clear the user's cart now that the order is created
       await tx.delete(cartItems).where(eq(cartItems.userId, userId));
-
-      // 7. Return the completed order
       return newOrder;
     });
   }

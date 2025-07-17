@@ -446,32 +446,21 @@ export function useOrder(id: number) {
   });
 }
 
-export function useCreateOrder() {
+export function useCreateManualUpiOrder() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  return useMutation<Order, Error, z.infer<typeof createOrderInputSchema>>({
-    mutationFn: async (newOrderData) => {
-      const res = await apiRequest("POST", "/api/orders", newOrderData);
+  return useMutation<Order, Error, void>({ // It takes no arguments
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/orders/manual-upi");
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Failed to create order." }));
+        const errorData = await res.json().catch(() => ({ message: "Failed to place order." }));
         throw new Error(errorData.message);
       }
       return await res.json();
     },
     onSuccess: () => {
-      // When the order is created successfully, refetch orders and cart data
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cart'] });
-    },
-    onError: (error) => {
-      // This toast is handled in the CheckoutPage component for more specific feedback,
-      // but we can keep a fallback here.
-      toast({
-        variant: "destructive",
-        title: "Order Creation Failed",
-        description: error.message || "There was a problem saving your order. Please contact support.",
-      });
     },
   });
 }
@@ -489,6 +478,7 @@ export function useUpdateOrderStatus() {
     }
   });
 }
+
 
 // Banner API
 export function useBanners(type?: string) {

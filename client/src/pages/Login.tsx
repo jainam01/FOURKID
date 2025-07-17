@@ -12,7 +12,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// We'll update this schema in the next section
 import { LoginCredentials, loginSchema } from "@shared/schema";
 import { useLogin } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -24,8 +25,9 @@ const Login = () => {
 
   const form = useForm<LoginCredentials>({
     resolver: zodResolver(loginSchema),
+    // The identifier field can be email or phone. We will set this up next.
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
     },
   });
@@ -50,34 +52,36 @@ const Login = () => {
   return (
     <>
       <Helmet>
-        <title>Login - Fourkids Wholesale</title>
-        <meta name="description" content="Login to your Fourkids wholesale account to access exclusive products and place orders." />
+        <title>Wholesale Dealer Login - Fourkids</title>
+        <meta name="description" content="Access your account to manage your orders." />
       </Helmet>
 
-      <div className="container mx-auto py-16 px-4">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Login to Your Account</CardTitle>
-              <CardDescription className="text-center">
-                Enter your email and password to access your wholesale account
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 py-12 px-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-lg">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold">Wholesale Dealer Login</CardTitle>
+              <CardDescription>
+                Access your account to manage your orders.
               </CardDescription>
             </CardHeader>
 
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="email"
+                    // Name changed to 'identifier' for email/phone
+                    name="identifier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email or Phone Number</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="you@example.com"
-                            type="email"
-                            autoComplete="email"
+                            placeholder="you@example.com or 1234567890"
+                            // Type is "text" to allow phone numbers
+                            type="text"
+                            autoComplete="username"
                             {...field}
                           />
                         </FormControl>
@@ -105,33 +109,36 @@ const Login = () => {
                     )}
                   />
 
+                  <div className="flex justify-end text-sm">
+                    <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+                      Forgot your password?
+                    </Link>
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full"
                     disabled={login.isPending}
                   >
-                    {login.isPending ? "Signing in..." : "Sign In"}
+                    {login.isPending ? "Signing in..." : "Login"}
                   </Button>
                 </form>
               </Form>
 
-              <div className="mt-4 text-center">
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col space-y-4">
-              <div className="text-center w-full">
-                <span className="text-sm text-muted-foreground">
-                  Don't have an account yet?{" "}
+              {/* Separator with text */}
+              <div className="my-6 flex items-center">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="mx-4 flex-shrink text-sm text-muted-foreground">
+                  New to Fourkids?
                 </span>
-                <Link href="/register" className="text-sm text-primary hover:underline">
-                  Sign up                
-                </Link>
+                <div className="flex-grow border-t border-gray-300"></div>
               </div>
-            </CardFooter>
+
+              {/* Outlined Register Button */}
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/register">Register for a new account</Link>
+              </Button>
+            </CardContent>
           </Card>
         </div>
       </div>

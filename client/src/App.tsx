@@ -43,6 +43,9 @@ import PrivacyPolicy from "@/components/layout/footer/Information/PrivacyPolicy"
 import ScrollToTop from "@/lib/ScrollToTop";
 import Review from "@/pages/admin/Review";
 import { CheckoutPage } from "@/pages/CheckoutPage";
+import { OrderDetailsPage  } from "@/pages/OrderDetailsPage";
+import ForgotPassword from "./pages/ForgotPassword"; 
+import ResetPassword from "./pages/ResetPassword"; 
 // Contexts (if needed at this level, otherwise they might be within specific layouts)
 // For simplicity, let's assume they are not strictly needed to wrap the entire App
 // but rather specific parts (e.g., CartProvider around non-admin routes if Admin doesn't use cart)
@@ -102,6 +105,9 @@ function App() {
           <Route path="/wholesale-program" component={WholesaleProgram} />
           <Route path="/about" component={AboutUs} />
           <Route path="/checkout" component={CheckoutPage} />
+          <Route path="/orders/:id" component={OrderDetailsPage} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password/:token" component={ResetPassword} />
           {/* Fallback for non-admin, non-matched routes */}
           <Route component={NotFound} />
         </Switch>

@@ -427,8 +427,8 @@ export class MemStorage implements IStorage {
       address: orderData.address,
       userId: orderData.userId,
       total: orderData.total,
-      paymentIntentId: orderData.paymentIntentId ?? null, 
-      status: orderData.status ?? 'pending'
+      status: orderData.status ?? 'pending',
+      paymentMethod: orderData.paymentMethod ?? null
     };
     this.ordersData.set(orderId, order);
     
@@ -442,7 +442,7 @@ export class MemStorage implements IStorage {
         price: item.price,
         productId: item.productId,
         quantity: item.quantity,
-        variantInfo: item.variantInfo ?? null
+        variantInfo: (item.variantInfo as ProductVariant[] | null) ?? null
       };
       this.orderItemsData.set(orderItemId, orderItem);
       
