@@ -9,6 +9,7 @@ import cors from 'cors';
 import connectPgSimple from 'connect-pg-simple';
 import { Pool } from 'pg';
 import nodemailer from 'nodemailer'; // <-- Import nodemailer here
+import path from 'path';
 
 import { registerRoutes } from './routes';
 import { DbStorage } from './db-storage';
@@ -108,6 +109,14 @@ async function startServer() {
         await setupVite(app, httpServer);
     } else {
         serveStatic(app);
+        app.get('*', (req, res, next) => {
+            // If the request is for an API route, let the 404 handler catch it
+            if (req.originalUrl.startsWith('/api/')) {
+                return next();
+            }
+            // For all other routes, serve the main HTML file and let the client-side router take over.
+            res.sendFile(path.resolve(__dirname, '..', '..', 'client', 'dist', 'index.html'));
+        });
     }
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

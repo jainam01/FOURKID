@@ -14,6 +14,7 @@ import OffersBanner from "@/components/home/offerbanner";
 import Newsletter from "@/components/home/Newsletter";
 // import ShopByAgeSection from '@/components/home/ShopByAgeSection';
 import RetailerReviewSection from "@/components/home/RetailerReviewSection";
+import CategoryShowcase from "@/components/home/CategoryShowcase";
 
 const Home = () => {
   const { data: productsResponse } = useProducts();
@@ -86,6 +87,7 @@ const Home = () => {
       <HeroCarousel />
       <CategorySection />
       <OffersBanner />
+      <CategoryShowcase />
       {/* <ShopByAgeSection /> */}
     
       <div className="container mx-auto px-4 my-12 md:my-16">

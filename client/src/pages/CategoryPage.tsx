@@ -26,7 +26,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useMobile } from "@/hooks/use-mobile";
-// import { Separator } from "@/components/ui/separator"; // Not used, can be removed
+
 import {
   Accordion,
   AccordionContent,
