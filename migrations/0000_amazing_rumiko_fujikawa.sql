@@ -3,6 +3,7 @@ CREATE TABLE "banners" (
 	"title" text NOT NULL,
 	"description" text,
 	"image" text NOT NULL,
+	
 	"link" text,
 	"type" text NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
